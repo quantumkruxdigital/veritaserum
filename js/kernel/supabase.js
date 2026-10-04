@@ -15,6 +15,7 @@ export const SupaFS={
  async ls(p,all){return(await this.list(key(p).replace(/\/$/,''))).filter(e=>all||e.name[0]!='.').map(e=>({name:e.name,type:e.id?'f':'d',size:e.metadata?.size||0}))},
  async stat(p){if(p=='/')return{type:'d'};const k=key(p),i=k.lastIndexOf('/'),e=(await this.list(k.slice(0,i))).find(x=>x.name==k.slice(i+1));return e?{type:e.id?'f':'d',size:e.metadata?.size||0}:null},
  async read(p){return await(await sbf('GET','/storage/v1/object/authenticated/'+BK+'/'+ek(key(p)))).text()},
+ async blob(p){return await(await sbf('GET','/storage/v1/object/authenticated/'+BK+'/'+ek(key(p)))).blob()},
  async put(p,blob){await sbf('POST','/storage/v1/object/'+BK+'/'+ek(key(p)),{headers:{'x-upsert':'true','Content-Type':blob.type||'application/octet-stream'},body:blob})},
  async write(p,c){await this.put(p,new Blob([c],{type:'text/plain'}))},
  async mkdir(p){await this.put(p.replace(/\/$/,'')+'/.emptyFolderPlaceholder',new Blob([],{type:'application/octet-stream'}))},

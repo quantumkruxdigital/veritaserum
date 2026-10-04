@@ -2,6 +2,7 @@
 import {conv} from './apps/convert.js';
 import {files} from './apps/files.js';
 import {notes} from './apps/notes.js';
+import {music} from './apps/music.js';
 import {settings} from './apps/settings.js';
 import {vault} from './apps/vault.js';
 import {cmd} from './kernel/cmds.js';
@@ -31,7 +32,7 @@ if(location.hash.startsWith('#t=')){try{localStorage.setItem('wos.token',decodeU
   try{const j=await(await api('/api/sys')).json();setSys({DEV:!!j.device,RUNNER:!!j&&'device' in j})}catch{}
   const d=await KV.get('desk'),v=await KV.get('vault');setSys({VC:v&&v.salt?v:null});
   Object.assign(set,d.set||{});document.documentElement.style.setProperty('--cy',set.ac);tick();if(Array.isArray(d.hist))setHist(d.hist);
-  const ops={files:()=>files(),conv:()=>conv(),vault:()=>vault(),sys:()=>settings()};
+  const ops={files:()=>files(),music:()=>music(),conv:()=>conv(),vault:()=>vault(),sys:()=>settings()};
   for(const w of d.win||[]){const f=w.id.startsWith('n:')?()=>notes(w.id.slice(2)):ops[w.id];if(!f)continue;f();const x=wins[w.id];if(!x)continue;Object.assign(x.e.style,{left:w.l,top:w.t,width:w.w,height:w.h});x.e.mx=w.mx||0;if(w.hide)x.e.style.display='none'}
   let last=JSON.stringify({set,hist:H,win:layout()});
   setInterval(()=>{const j=JSON.stringify({set,hist:H,win:layout()});if(j!==last){last=j;kvPut('desk',JSON.parse(j))}},3000);
