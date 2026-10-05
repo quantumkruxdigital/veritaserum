@@ -19,5 +19,6 @@ export const LocalFS={
  async read(p){const f=fs[p];if(f?.t!='f')throw'no such file';if('c'in f)return f.c;const b=await bget(p);if(!b)throw'file data missing';return b.text()},
  async blob(p){const f=fs[p];if(f?.t!='f')throw'no such file';if('c'in f)return new Blob([f.c],{type:f.mime||'text/plain'});const b=await bget(p);if(!b)throw'file data missing';return b},
  async write(p,c){wr(p,c)},async mkdir(p){mk(p)},async rm(p){rmf(p)},
- async put(p,blob){if(fs[par(p)]?.t!='d')throw'no such folder: '+par(p);if(fs[p]?.t=='d')throw'is a folder';await bput(p,blob);fs[p]={t:'f',size:blob.size,mime:blob.type||'application/octet-stream',bin:1};fsave()}
+ async put(p,blob){if(fs[par(p)]?.t!='d')throw'no such folder: '+par(p);if(fs[p]?.t=='d')throw'is a folder';await bput(p,blob);fs[p]={t:'f',size:blob.size,mime:blob.type||'application/octet-stream',bin:1};fsave()},
+ async wipe(){const gone=Object.keys(fs).filter(k=>k!='/');for(const k of gone)await bdel(k).catch(()=>0);fs={'/':{t:'d'}};fsave()}
 };

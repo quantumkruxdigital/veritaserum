@@ -44,7 +44,12 @@ export function media(openPath){
   seek.oninput=()=>{const el=active();if(el.duration)el.currentTime=el.duration*(seek.value/1000)};
   const controls=h('div',{className:'media-controls'},h('div',{className:'media-now'},title,sub),h('div',{className:'transport'},prev,play,next,fav),seek,h('div',{className:'mtime'},time));
   stage.append(video,h('div',{className:'media-audio-art',textContent:'♫'}),controls,audio);b.append(tabs,stage,library);
-  api={open:async p=>{await refresh();if(tracks.includes(p))await open(p,true)},refresh};refresh();
+  api={open:async p=>{await refresh();if(tracks.includes(p))await open(p,true)},refresh};
+  let refreshTimer=0;
+  const onFsChanged=()=>{clearTimeout(refreshTimer);refreshTimer=setTimeout(async()=>{await refresh();refreshTimer=setTimeout(()=>refresh(),650)},80)};
+  window.addEventListener('wos:vfs-changed',onFsChanged);
+  b.closest('.win')?.addEventListener('wos:close',()=>window.removeEventListener('wos:vfs-changed',onFsChanged),{once:true});
+  refresh();
  });
  return W;
 }
