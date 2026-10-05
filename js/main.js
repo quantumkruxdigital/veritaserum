@@ -2,6 +2,7 @@
 import {conv} from './apps/convert.js';
 import {files} from './apps/files.js';
 import {scribe} from './apps/scribe.js';
+import {sam} from './apps/sam.js';
 import {media} from './apps/media.js';
 import {imageViewer} from './apps/image-viewer.js';
 import {videoImporter} from './apps/video-importer.js';
@@ -39,14 +40,14 @@ if(location.hash.startsWith('#t=')){try{localStorage.setItem('wos.token',decodeU
   try{const j=await(await api('/api/sys')).json();setSys({DEV:!!j.device,RUNNER:!!j&&'device' in j})}catch{}
   const d=await KV.get('desk'),v=await KV.get('vault');setSys({VC:v&&v.salt?v:null});
   Object.assign(set,d.set||{});document.documentElement.style.setProperty('--cy',set.ac);tick();if(Array.isArray(d.hist))setHist(d.hist);
-  const ops={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),conv:()=>conv(),vault:()=>vault(),sys:()=>settings()};
+  const ops={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),sam:()=>sam(),conv:()=>conv(),vault:()=>vault(),sys:()=>settings()};
   for(const w of d.win||[]){const f=w.id.startsWith('scribe:')?()=>scribe(w.id.slice(7)):ops[w.id];if(!f)continue;f();const x=wins[w.id];if(!x)continue;Object.assign(x.e.style,{left:w.l,top:w.t,width:w.w,height:w.h});x.e.mx=w.mx||0;if(w.hide)x.e.style.display='none'}
   let last=JSON.stringify({set,hist:H,win:layout()}),syncing=true;
   addEventListener('wos:self-destruct',()=>{syncing=false},{once:true});
   setInterval(()=>{if(!syncing)return;const j=JSON.stringify({set,hist:H,win:layout()});if(j!==last){last=j;kvPut('desk',JSON.parse(j))}},3000);
   say(CFG.supabaseUrl?'Signed in as '+SB.email+'. Files, vault and desktop follow you to any device; npm runs in /work.':'Server mounted: your files, vault and desktop now follow you to any device.')
  }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}})();
-const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),conv:()=>conv(),sys:()=>settings(),vault:()=>vault()};
+const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),sam:()=>sam(),conv:()=>conv(),sys:()=>settings(),vault:()=>vault()};
 configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=await V.stat(p).catch(()=>null);if(st?.type=='d')files(p);else if(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(p))imageViewer(p);else if(p)files(p)}});
 addEventListener('wos:terminal-toggle',()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',ctrlKey:true,bubbles:true})));
 act.io.say('kernel ready · '+Object.keys(fs).length+' fs nodes · terminal resident (Ctrl+Space)');
