@@ -18,7 +18,7 @@ import {tick} from '../shell/dock.js';
 import {S, show, wins} from '../shell/wm.js';
 import {closePane, split, togTerm} from './terminal.js';
 
-const APPS={settings,convert:conv,files,term:()=>togTerm(true),vault,notes:()=>notes('/docs/scratch.txt')};
+const APPS={settings,convert:conv,files,term:()=>togTerm(true),vault,notes:()=>notes('/Documents/scratch.txt')};
 cmd('help','list commands',(a,io)=>Object.entries(cmds).forEach(([n,c])=>io.say(n.padEnd(8)+c.d)));
 cmd('ls','ls [-a] [dir]  list folder',async(a,io)=>{const all=a.includes('-a'),d=a.find(x=>x!='-a');(await V.ls(res(io.cwd,d||'.'),all)).sort((x,y)=>x.type==y.type?x.name.localeCompare(y.name):x.type<y.type?-1:1).forEach(e=>io.say((e.type=='d'?'d ':'- ')+e.name+(e.type=='f'&&e.size!=null?'  '+e.size:'')))});
 cmd('cd','change folder',async(a,io)=>{const p=res(io.cwd,a[0]||'/');if((await V.stat(p))?.type!='d')throw'not a folder';io.cwd=p});

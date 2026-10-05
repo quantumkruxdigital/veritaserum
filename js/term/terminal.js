@@ -18,7 +18,7 @@ const panes=()=>tp.querySelectorAll('.pane');
 export function split(el,dir){if(panes().length>=8)throw'pane limit reached (8)';const n=pane(el.io.cwd),sp=h('div',{className:'split'+(dir=='h'?' col':'')});el.parentNode.replaceChild(sp,el);sp.append(el,n);n.inp.focus()}
 export function closePane(el){const p=el.parentNode;if(p===root){togTerm(false);return}el.remove();if(p.children.length==1)p.replaceWith(p.firstChild);(root.querySelector('.pane')).inp.focus()}
 export function togTerm(on){on=on??!tp.classList.contains('on');tp.classList.toggle('on',on);tp.inert=!on;if(on)setTimeout(()=>(act||root.querySelector('.pane')).inp.focus(),30)}
-const p0=pane('/docs');
+const p0=pane('/Documents');
 root.append(p0);
 act=p0;
 p0.classList.add('act');

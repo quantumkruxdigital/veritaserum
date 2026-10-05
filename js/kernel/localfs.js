@@ -1,8 +1,8 @@
 // Browser-only filesystem. Text metadata lives in localStorage; binary payloads live in IndexedDB.
 export let fs={};
 try{fs=JSON.parse(localStorage.getItem('wos.fs'))||{}}catch{}
-if(!fs['/'])fs={'/':{t:'d'},'/docs':{t:'d'},'/docs/welcome.txt':{t:'f',c:'Press Ctrl+Space for the terminal, then type: help'},'/Music':{t:'d'}};
-if(!fs['/Music'])fs['/Music']={t:'d'};
+if(!fs['/'])fs={'/':{t:'d'}};
+for(const d of ['/Documents','/Music','/Pictures','/Videos','/Downloads'])if(!fs[d])fs[d]={t:'d'};
 const fsave=()=>{try{localStorage.setItem('wos.fs',JSON.stringify(fs))}catch{}};
 export const res=(c,p)=>{const o=[];for(const s of(p[0]=='/'?p:c+'/'+p).split('/'))if(s=='..')o.pop();else if(s&&s!='.')o.push(s);return'/'+o.join('/')};
 const par=k=>k.slice(0,k.lastIndexOf('/')||1);

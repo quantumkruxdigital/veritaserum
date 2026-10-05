@@ -1,6 +1,7 @@
 // Files app: persistent browser uploads, two-pane navigation, directory management, and type-aware opening.
 import {notes} from './notes.js';
-import {music,isAudio} from './music.js';
+import {media,isAudio,isVideo} from './media.js';
+import {imageViewer,isImage} from './image-viewer.js';
 import {res} from '../kernel/localfs.js';
 import {h} from '../kernel/util.js';
 import {V, remote} from '../kernel/vfs.js';
@@ -8,7 +9,7 @@ import {win} from '../shell/wm.js';
 import {registerContext,pinQuick,unpinQuick,isPinned} from '../shell/context.js';
 
 const TEXT=/\.(txt|md|json|js|mjs|css|html|xml|csv|log|toml|ini|yaml|yml)$/i;
-const open=p=>isAudio(p)?music(p):TEXT.test(p)||!p.includes('.')?notes(p):notes(p);
+const open=p=>(isAudio(p)||isVideo(p))?media(p):isImage(p)?imageViewer(p):TEXT.test(p)||!p.includes('.')?notes(p):notes(p);
 const nice=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
 const base=p=>p=='/'?'/':p.split('/').pop();
 const parent=p=>p=='/'?'/':res(p,'..');
@@ -27,8 +28,8 @@ async function moveNode(from,to){
  await V.rm(from);
 }
 
-export function files(start='/docs'){const existing=document.querySelector('.win[data-win-id="files"]');if(existing&&start!='/docs')existing.dispatchEvent(new CustomEvent('files:navigate',{detail:start}));win('files','Files',790,520,b=>{
- let p=start,filter='',treeOpen=new Set(['/','/docs','/Music']),selected=new Set(),anchor=null,clipboard={mode:null,paths:[]};
+export function files(start='/Documents'){const existing=document.querySelector('.win[data-win-id="files"]');if(existing&&start!='/Documents')existing.dispatchEvent(new CustomEvent('files:navigate',{detail:start}));win('files','Files',790,520,b=>{
+ let p=start,filter='',treeOpen=new Set(['/','/Documents','/Music','/Pictures','/Videos','/Downloads']),selected=new Set(),anchor=null,clipboard={mode:null,paths:[]};
  const pick=h('input',{type:'file',multiple:true,style:'display:none'});
  const shell=h('div',{className:'files-shell'}),main=h('section',{className:'files-main'}),side=h('aside',{className:'files-side'});
  b.classList.add('files-body');b.replaceChildren(shell,pick);shell.append(main,side);
@@ -78,7 +79,7 @@ export function files(start='/docs'){const existing=document.querySelector('.win
   const list=h('div',{className:'file-list'}),shown=es.filter(e=>!filter||e.name.toLowerCase().includes(filter)).sort((x,y)=>x.type==y.type?x.name.localeCompare(y.name):x.type<y.type?-1:1);
   if(p!='/')list.append(h('div',{className:'file-row up',onclick:()=>go(parent(p))},h('span',{className:'file-icon',textContent:'↰'}),h('span',{className:'file-name',textContent:'Parent folder'}),h('span',{className:'file-kind',textContent:'Directory'})));
   const rowOrder=shown.map(e=>res(p,e.name));
-  for(const e of shown){const k=res(p,e.name),row=h('div',{className:'file-row'+(selected.has(k)?' selected':''),title:k,draggable:true,ondblclick:ev=>{ev.stopPropagation();e.type=='d'?go(k):open(k)},ondragstart:ev=>{if(!selected.has(k)){selected.clear();selected.add(k)}ev.dataTransfer.setData('application/x-webos-paths',JSON.stringify(selectedPaths()));ev.dataTransfer.effectAllowed='copyMove'}});row.dataset.path=k;row.dataset.kind=e.type=='d'?'directory':'file';row.dataset.label=e.name;const icon=h('span',{className:'file-icon',textContent:e.type=='d'?'▸':isAudio(k)?'♫':'·'}),nm=h('span',{className:'file-name',textContent:e.name}),kind=h('span',{className:'file-kind',textContent:e.type=='d'?'Directory':nice(e.size||0)}),del=h('button',{className:'file-delete',textContent:'✕',title:'Delete',onclick:ev=>{ev.stopPropagation();removePaths([k])}});row.append(icon,nm,kind,del);row.onclick=ev=>selectOne(k,ev,rowOrder);if(e.type=='d'){row.ondragover=ev=>{if(ev.dataTransfer.types.includes('application/x-webos-paths')){ev.preventDefault();row.classList.add('drop-target')}};row.ondragleave=()=>row.classList.remove('drop-target');row.ondrop=async ev=>{ev.preventDefault();ev.stopPropagation();row.classList.remove('drop-target');try{const paths=JSON.parse(ev.dataTransfer.getData('application/x-webos-paths')||'[]');for(const from of paths){if(from==k||k.startsWith(from+'/'))continue;await moveNode(from,await uniqueDest(k,base(from)))}selected.clear();await render()}catch(x){alert(String(x?.message||x))}}}list.append(row)}
+  for(const e of shown){const k=res(p,e.name),row=h('div',{className:'file-row'+(selected.has(k)?' selected':''),title:k,draggable:true,ondblclick:ev=>{ev.stopPropagation();e.type=='d'?go(k):open(k)},ondragstart:ev=>{if(!selected.has(k)){selected.clear();selected.add(k)}ev.dataTransfer.setData('application/x-webos-paths',JSON.stringify(selectedPaths()));ev.dataTransfer.effectAllowed='copyMove'}});row.dataset.path=k;row.dataset.kind=e.type=='d'?'directory':'file';row.dataset.label=e.name;const icon=h('span',{className:'file-icon',textContent:e.type=='d'?'▸':isAudio(k)?'♫':isVideo(k)?'▣':'·'}),nm=h('span',{className:'file-name',textContent:e.name}),kind=h('span',{className:'file-kind',textContent:e.type=='d'?'Directory':nice(e.size||0)}),del=h('button',{className:'file-delete',textContent:'✕',title:'Delete',onclick:ev=>{ev.stopPropagation();removePaths([k])}});row.append(icon,nm,kind,del);row.onclick=ev=>selectOne(k,ev,rowOrder);if(e.type=='d'){row.ondragover=ev=>{if(ev.dataTransfer.types.includes('application/x-webos-paths')){ev.preventDefault();row.classList.add('drop-target')}};row.ondragleave=()=>row.classList.remove('drop-target');row.ondrop=async ev=>{ev.preventDefault();ev.stopPropagation();row.classList.remove('drop-target');try{const paths=JSON.parse(ev.dataTransfer.getData('application/x-webos-paths')||'[]');for(const from of paths){if(from==k||k.startsWith(from+'/'))continue;await moveNode(from,await uniqueDest(k,base(from)))}selected.clear();await render()}catch(x){alert(String(x?.message||x))}}}list.append(row)}
   if(!shown.length)list.append(h('div',{className:'file-empty',textContent:filter?'No matching files or folders.':'This folder is empty.'}));
   const newNote=h('input',{className:'file-new-note',placeholder:'New note name — press Enter',onkeydown:async e=>{if(e.key=='Enter'&&e.currentTarget.value.trim()){const k=res(p,e.currentTarget.value.trim());try{await V.write(k,'');notes(k);render()}catch(x){alert(String(x?.message||x))}}}});
   main.replaceChildren(top,actions,dz,list,newNote);
@@ -86,7 +87,7 @@ export function files(start='/docs'){const existing=document.querySelector('.win
 
  async function renderSide(){
   const quick=h('div',{className:'side-section'},h('div',{className:'side-title',textContent:'Places'}));
-  for(const [label,q,ic] of [['Root','/','⌂'],['Documents','/docs','▤'],['Music','/Music','♫']])quick.append(h('button',{className:'place'+(p==q?' sel':''),onclick:()=>go(q)},h('span',{textContent:ic}),h('span',{textContent:label})));
+  for(const [label,q,ic] of [['Root','/','⌂'],['Documents','/Documents','▤'],['Music','/Music','♫'],['Pictures','/Pictures','▧'],['Videos','/Videos','▶'],['Downloads','/Downloads','⇩']])quick.append(h('button',{className:'place'+(p==q?' sel':''),onclick:()=>go(q)},h('span',{textContent:ic}),h('span',{textContent:label})));
   const tree=h('div',{className:'side-section dir-section'},h('div',{className:'side-title',textContent:'Directories'}),h('div',{className:'dir-tree'}));
   tree.lastChild.append(await treeNode('/','Root'));
   const manage=h('div',{className:'dir-manage'},h('button',{className:'btn mini',textContent:'+ Folder',onclick:newFolder}),h('button',{className:'btn mini',textContent:'Rename',onclick:renameFolder,disabled:p=='/'}),h('button',{className:'btn mini warn',textContent:'Delete',onclick:deleteFolder,disabled:p=='/'}),h('button',{className:'btn mini',textContent:'↻',title:'Refresh',onclick:render}));
