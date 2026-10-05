@@ -16,6 +16,7 @@ import {KV, V, kvPut, setSys} from './kernel/vfs.js';
 import {tick} from './shell/dock.js';
 import {showLogin} from './shell/login.js';
 import {layout, win, wins} from './shell/wm.js';
+import {configureContext} from './shell/context.js';
 import {H, act, setHist} from './term/terminal.js';
 import './term/commands.js';   // registers the built-in terminal commands (side effects only)
 
@@ -38,5 +39,8 @@ if(location.hash.startsWith('#t=')){try{localStorage.setItem('wos.token',decodeU
   setInterval(()=>{const j=JSON.stringify({set,hist:H,win:layout()});if(j!==last){last=j;kvPut('desk',JSON.parse(j))}},3000);
   say(CFG.supabaseUrl?'Signed in as '+SB.email+'. Files, vault and desktop follow you to any device; npm runs in /work.':'Server mounted: your files, vault and desktop now follow you to any device.')
  }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}})();
+const launchers={files:()=>files(),music:()=>music(),notes:()=>notes('/docs/scratch.txt'),conv:()=>conv(),sys:()=>settings(),vault:()=>vault()};
+configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=await V.stat(p).catch(()=>null);if(st?.type=='d'){files(p)}else if(p)files(p)}});
+addEventListener('wos:terminal-toggle',()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',ctrlKey:true,bubbles:true})));
 act.io.say('kernel ready · '+Object.keys(fs).length+' fs nodes · terminal resident (Ctrl+Space)');
 window.os={cmd,fs:{res,kids,wr,mk,rmf},win,set};

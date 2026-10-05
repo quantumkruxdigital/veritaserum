@@ -11,6 +11,7 @@ export const show=id=>{const w=wins[id];w.e.style.display='flex';w.e.style.zInde
 export function win(id,title,w,hh,build,onclose){
  if(wins[id]){wins[id].e.style.display='flex';wins[id].e.style.zIndex=++z;return wins[id]}
  const n=Object.keys(wins).length,e=h('div',{className:'win'}),bd=h('div',{className:'bd'});
+ e.dataset.winId=id;
  e.style.cssText=`left:${90+n*30}px;top:${96+n*26}px;width:${w}px;height:${hh}px;z-index:${++z}`;
  const hide=()=>e.style.display='none',max=()=>{if(e.mx){Object.assign(e.style,e.mx);e.mx=0}else{e.mx={left:e.style.left,top:e.style.top,width:e.style.width,height:e.style.height};Object.assign(e.style,{left:'0px',top:'82px',width:'1280px',height:'718px'})}},close=()=>{e.remove();delete wins[id];onclose&&onclose()};
  const tb=h('div',{className:'tb',ondblclick:ev=>{if(ev.target.tagName!='B')max()}},h('span',{className:'tt',textContent:title}),h('span',{className:'ct'},h('b',{title:'Minimize',onclick:hide}),h('b',{title:'Maximize',onclick:max}),h('b',{title:'Close',onclick:close})));
