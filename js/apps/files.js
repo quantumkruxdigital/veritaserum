@@ -7,6 +7,7 @@ import {h} from '../kernel/util.js';
 import {V, remote} from '../kernel/vfs.js';
 import {win} from '../shell/wm.js';
 import {registerContext,pinQuick,unpinQuick,isPinned} from '../shell/context.js';
+import {alchemyFormats,convertPath} from './alchemy.js';
 
 const TEXT=/\.(txt|md|json|js|mjs|css|html|xml|csv|log|toml|ini|yaml|yml)$/i;
 const open=p=>(isAudio(p)||isVideo(p))?media(p):isImage(p)?imageViewer(p):TEXT.test(p)||!p.includes('.')?scribe(p):scribe(p);
@@ -93,7 +94,18 @@ export function files(start='/Documents'){const existing=document.querySelector(
   side.replaceChildren(places,manage);
  }
  async function render(){await Promise.all([renderMain(),renderSide()])}
- registerContext('files',async ev=>{const el=ev.target.closest('[data-path]');if(!el){return [{label:'New folder here',action:newFolder},{label:'Upload files here',action:()=>pick.click()},{label:'Paste',disabled:!clipboard.paths.length,action:()=>paste()}]}const q=el.dataset.path,label=el.dataset.label||base(q),dir=el.dataset.kind=='directory',pin={type:'path',target:q,label};if(!selected.has(q)){selected.clear();selected.add(q);anchor=q;await renderMain()}const paths=selectedPaths(),many=paths.length>1,a=[];if(!many)a.push({label:dir?'Open '+label:'Open '+label,action:()=>dir?go(q):open(q)});a.push({separator:'Clipboard'},{label:`Cut${many?' '+paths.length+' items':''}`,action:()=>setClip('cut',paths)},{label:`Copy${many?' '+paths.length+' items':''}`,action:()=>setClip('copy',paths)});if(dir)a.push({label:'Paste into '+label,disabled:!clipboard.paths.length,action:()=>paste(q)});a.push({separator:'Manage'});if(!many&&q!='/')a.push({label:'Rename',action:()=>renamePath(q)});if(!many)a.push({label:isPinned(pin)?'Unpin from Quick Launch':'Pin to Quick Launch',action:()=>isPinned(pin)?unpinQuick(pin):pinQuick(pin)});if(q!='/')a.push({label:`Delete${many?' '+paths.length+' items':' '+label}`,danger:true,action:()=>removePaths(paths)});if(!many)a.push({label:'Properties',action:()=>properties(q)});return a});
+ registerContext('files',async ev=>{
+  const el=ev.target.closest('[data-path]');
+  if(!el)return [{label:'New folder here',action:newFolder},{label:'Upload files here',action:()=>pick.click()},{label:'Paste',disabled:!clipboard.paths.length,action:()=>paste()}];
+  const q=el.dataset.path,label=el.dataset.label||base(q),dir=el.dataset.kind=='directory',pin={type:'path',target:q,label};
+  if(!selected.has(q)){selected.clear();selected.add(q);anchor=q;await renderMain()}
+  const paths=selectedPaths(),many=paths.length>1,a=[];
+  if(!many)a.push({label:dir?'Open '+label:'Open '+label,action:()=>dir?go(q):open(q)});
+  if(!many&&!dir){const formats=alchemyFormats(q);if(formats.length)a.push({label:'Alchemy',children:formats.map(fmt=>({label:'Convert to '+fmt.toUpperCase(),action:async()=>{try{const out=await convertPath(q,fmt);await render();alert('Alchemy created '+out)}catch(x){alert('Alchemy: '+String(x?.message||x))}}}))})}
+  a.push({separator:'Clipboard'},{label:`Cut${many?' '+paths.length+' items':''}`,action:()=>setClip('cut',paths)},{label:`Copy${many?' '+paths.length+' items':''}`,action:()=>setClip('copy',paths)});
+  if(dir)a.push({label:'Paste into '+label,disabled:!clipboard.paths.length,action:()=>paste(q)});
+  a.push({separator:'Manage'});if(!many&&q!='/')a.push({label:'Rename',action:()=>renamePath(q)});if(!many)a.push({label:isPinned(pin)?'Unpin from Quick Launch':'Pin to Quick Launch',action:()=>isPinned(pin)?unpinQuick(pin):pinQuick(pin)});if(q!='/')a.push({label:`Delete${many?' '+paths.length+' items':' '+label}`,danger:true,action:()=>removePaths(paths)});if(!many)a.push({label:'Properties',action:()=>properties(q)});return a;
+ });
  b.tabIndex=0;b.addEventListener('keydown',e=>{const mod=e.ctrlKey||e.metaKey;if(mod&&e.key.toLowerCase()=='a'){e.preventDefault();main.querySelectorAll('.file-row[data-path]').forEach(x=>selected.add(x.dataset.path));renderMain()}else if(mod&&e.key.toLowerCase()=='c'){e.preventDefault();setClip('copy')}else if(mod&&e.key.toLowerCase()=='x'){e.preventDefault();setClip('cut')}else if(mod&&e.key.toLowerCase()=='v'){e.preventDefault();paste()}else if(e.key=='Delete'){e.preventDefault();removePaths()}else if(e.key=='F2'&&selected.size==1){e.preventDefault();renamePath(selectedPaths()[0])}});
  render();
  })}

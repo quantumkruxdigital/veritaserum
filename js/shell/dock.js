@@ -1,5 +1,5 @@
 // Top dock: launchers, clock, popovers.
-import {conv} from '../apps/convert.js';
+import {alchemy} from '../apps/alchemy.js';
 import {files} from '../apps/files.js';
 import {scribe} from '../apps/scribe.js';
 import {sam} from '../apps/sam.js';
@@ -25,7 +25,7 @@ const pop=$('#pop'),closePop=()=>pop.style.display='none';
 function popAt(btn,...c){const r=btn.getBoundingClientRect(),f=$('#fit').getBoundingClientRect();pop.replaceChildren(...c);pop.style.display='block';pop.style.left=Math.max(4,Math.min(1090,(r.left-f.left)/S-60))+'px'}
 $('#dock').onclick=e=>{const b=e.target.closest('button');if(!b)return;e.stopPropagation();const a=b.dataset.a;
  if(a=='menu'){const run=Object.entries(wins).map(([id,w])=>h('button',{textContent:(w.e.style.display=='none'?'○ ':'● ')+w.t,onclick(){closePop();show(id)}}));
-  popAt(b,...[['Media',()=>media()],['Images',()=>imageViewer()],['Video Importer',()=>videoImporter()],['Scribe',()=>scribe('/Documents/untitled.scribe')],['SAM',()=>sam()],['Convert',conv],['Settings',settings],['Vault',vault]].map(([t,f])=>h('button',{textContent:t,onclick(){closePop();f()}})),...(run.length?[h('div',{className:'hd',textContent:'Running (○ = minimized)',style:'margin:8px 0 2px;padding:0 10px'}),...run]:[]))}
+  popAt(b,...[['Media',()=>media()],['Images',()=>imageViewer()],['Video Importer',()=>videoImporter()],['Scribe',()=>scribe('/Documents/untitled.scribe')],['SAM',()=>sam()],['Alchemy',alchemy],['Settings',settings],['Vault',vault]].map(([t,f])=>h('button',{textContent:t,onclick(){closePop();f()}})),...(run.length?[h('div',{className:'hd',textContent:'Running (○ = minimized)',style:'margin:8px 0 2px;padding:0 10px'}),...run]:[]))}
  else if(a=='term')togTerm();else if(a=='files')files();else if(a=='vault')vault();
  else if(a=='vol'){const m=h('input',{type:'checkbox',checked:!!set.mute,onchange(){set.mute=+m.checked;sv();if(DEV)dev('volume',set.mute?'mute':'unmute').catch(()=>0)}}),r=h('input',{type:'range',min:0,max:100,value:set.vol,style:'width:100%',oninput(){set.vol=+r.value;set.mute=0;m.checked=false;sv();if(DEV)dev('volume','set',set.vol).then(()=>dev('volume','unmute')).catch(()=>0)}});popAt(b,h('label',{className:'s'},'Volume',r),h('label',{className:'s'},'Mute',m),h('button',{textContent:'Test tone',onclick:beep}))}};
 addEventListener('pointerdown',e=>{if(!e.target.closest('#pop,#dock'))closePop()});
