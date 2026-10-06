@@ -8,7 +8,7 @@ const esc=s=>String(s??'').replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 const plainFromHtml=s=>{const d=document.createElement('div');d.innerHTML=s;return d.innerText};
 const rtfEsc=s=>String(s).replace(/\\/g,'\\\\').replace(/{/g,'\\{').replace(/}/g,'\\}').replace(/\n/g,'\\par\n');
 const htmlFromRtf=s=>esc(String(s).replace(/\\par[d]?\s?/g,'\n').replace(/\\'[0-9a-f]{2}/gi,'').replace(/\\[a-z]+-?\d* ?/gi,'').replace(/[{}]/g,'')).replace(/\n/g,'<br>');
-const notify=path=>dispatchEvent(new CustomEvent('wos:vfs-changed',{detail:{path,source:'editor'}}));
+const notify=path=>dispatchEvent(new CustomEvent('curios:vfs-changed',{detail:{path,source:'editor'}}));
 const ext=p=>(p.match(/\.([^.\/]+)$/)?.[1]||'').toLowerCase();
 const defaultMode=p=>HTML.test(p)||RICH.test(p)?'rich':'plain';
 

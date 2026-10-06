@@ -1,7 +1,7 @@
 // Universal context-menu service. Apps contribute contextual actions; the shell always adds Quick Launch.
 import {h} from '../kernel/util.js';
 
-const KEY='wos.quickLaunch.v1';
+const KEY='curios.quickLaunch.v1';
 let launchApp=()=>{}, openPath=()=>{};
 const providers=new Map();
 const appNames={files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',sam:'SAM',conv:'Convert',sys:'Settings',vault:'Vault'};
@@ -28,7 +28,7 @@ function quickItems(){const pins=load(),out=[sep('Quick Launch')];if(!pins.lengt
  return out;
 }
 function universal(target){const out=[];const appBtn=target.closest?.('#dock button[data-a]');if(appBtn){const id=appAliases[appBtn.dataset.a];if(id){const q={type:'app',target:id,label:appNames[id]||id};out.push(item(isPinned(q)?'Unpin '+q.label+' from Quick Launch':'Pin '+q.label+' to Quick Launch',()=>isPinned(q)?unpinQuick(q):pinQuick(q)),sep('Universal'))}}
- out.push(...quickItems());out.push(sep('Universal'),item('Open Files',()=>launchApp('files')),item('Open Terminal',()=>window.dispatchEvent(new CustomEvent('wos:terminal-toggle'))));return out}
+ out.push(...quickItems());out.push(sep('Universal'),item('Open Files',()=>launchApp('files')),item('Open Terminal',()=>window.dispatchEvent(new CustomEvent('curios:terminal-toggle'))));return out}
 
 document.addEventListener('contextmenu',async e=>{e.preventDefault();close();const w=e.target.closest?.('.win'),id=w?.dataset?.winId;let local=[];if(id&&providers.has(id)){try{local=await providers.get(id)(e)||[]}catch{local=[]}}
  const rendered=[];if(local.length){rendered.push(sep(appNames[id]||'App'));for(const a of local){if(a.separator)rendered.push(sep(a.separator));else rendered.push(item(a.label,a.action,a.danger?'danger':'',!!a.disabled))}rendered.push(sep('Universal'))}

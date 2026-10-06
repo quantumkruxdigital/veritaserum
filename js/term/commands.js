@@ -48,7 +48,7 @@ cmd('su','enter super-user mode',async(a,io)=>{
 cmd('obliviate','',async(a,io)=>{
  if(!isRoot())throw'root privileges required';
  if(a.length!==1||a[0]!=='-sys')throw'usage: obliviate -sys';
- io.say('WARNING: this permanently deletes all WebOS user files, settings, favorites, Quick Launch data, media state, vault data, and mounted workspace data.');
+ io.say('WARNING: this permanently deletes all CuriOS user files, settings, favorites, Quick Launch data, media state, vault data, and mounted workspace data.');
  const confirm=await io.secret('Type OBLIVIATE to confirm: ');
  if(confirm!=='OBLIVIATE')throw'aborted';
  io.say('obliviating system user data…');
@@ -70,11 +70,11 @@ cmd('vault','vault status',(a,io)=>{const m=vm();io.say(!m?'no vault':vkey?'unlo
 cmd('clear','clear screen',(a,io)=>io.clear());
 cmd('echo','print text',(a,io)=>io.say(a.join(' ')));
 cmd('sys','system info',(a,io)=>io.say(`stage 1280x800  scale ${S.toFixed(2)}  files ${Object.keys(fs).length}  windows ${Object.keys(wins).length}`));
-cmd('login','login <token>  sign in to your server',async(a,io)=>{if(CFG.supabaseUrl)throw'This desktop uses Supabase accounts. Run logout to get the sign-in screen.';if(!a[0])throw'usage: login <token>';localStorage.setItem('wos.token',a[0]);try{await api('/api/ls')}catch(e){localStorage.removeItem('wos.token');throw e}io.say('signed in, loading your server desktop…');setTimeout(()=>location.reload(),700)});
+cmd('login','login <token>  sign in to your server',async(a,io)=>{if(CFG.supabaseUrl)throw'This desktop uses Supabase accounts. Run logout to get the sign-in screen.';if(!a[0])throw'usage: login <token>';localStorage.setItem('curios.token',a[0]);try{await api('/api/ls')}catch(e){localStorage.removeItem('curios.token');throw e}io.say('signed in, loading your server desktop…');setTimeout(()=>location.reload(),700)});
 for(const n of['npm','npx','node'])cmd(n,n+' ...  runs on your server (Ctrl+C stops it)',async(a,io)=>{
  if(CFG.supabaseUrl&&!RUNNER)throw'No runner is connected: npm and node need server/server.mjs running (see README).';const wd=rcwd(io.cwd);if(wd==null)throw'npm and node run in /work. Try: cd /work';io.ac=new AbortController();const el=io.say('');let txt='';
  try{const r=await api('/api/exec',{method:'POST',signal:io.ac.signal,body:JSON.stringify({cmd:n,args:a,cwd:wd})}),rd=r.body.getReader(),dec=new TextDecoder();
   for(;;){const{done,value}=await rd.read();if(done)break;txt+=dec.decode(value,{stream:true});el.textContent=txt.replace(/\u0001exit:\S*$/,'');el.scrollIntoView({block:'end'})}
   const m=txt.match(/\u0001exit:(\S+)$/);if(m&&m[1]!='0')io.say('exit code '+m[1],'e')}
  catch(e){if(e.name=='AbortError')el.textContent=txt+'\n^C';else throw e}finally{io.ac=null}});
-cmd('logout','sign out of your server and return to this browser\'s files',()=>{localStorage.removeItem('wos.token');sbSave(null);setTimeout(()=>location.reload(),300)});
+cmd('logout','sign out of your server and return to this browser\'s files',()=>{localStorage.removeItem('curios.token');sbSave(null);setTimeout(()=>location.reload(),300)});

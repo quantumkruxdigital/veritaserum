@@ -1,7 +1,7 @@
 // AIService: provider-neutral inference client for SAM.
 import {api} from './runner.js';
 
-const ROUTE='wos.sam.route.v1', LOCAL='wos.sam.localModel.v1', CLOUD='wos.sam.cloudModel.v1';
+const ROUTE='curios.sam.route.v1', LOCAL='curios.sam.localModel.v1', CLOUD='curios.sam.cloudModel.v1';
 const get=(k,d)=>{try{return localStorage.getItem(k)||d}catch{return d}};
 const put=(k,v)=>{try{localStorage.setItem(k,v)}catch{}};
 export const aiConfig={

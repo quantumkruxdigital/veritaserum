@@ -1,23 +1,29 @@
 import {h} from '../kernel/util.js';
 import {V} from '../kernel/vfs.js';
 import {win} from '../shell/wm.js';
-
 const IMAGE=/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i;
 export const isImage=p=>IMAGE.test(p);
-let api=null,obj=null;
+let api=null;
+const ext=(p,e)=>p.replace(/\.[^.\/]+$/, '')+'.'+e;
 export function imageViewer(openPath){
- if(api){if(openPath)api.open(openPath);return win('images','Images',720,560,()=>{})}
- return win('images','Images',720,560,b=>{
-  b.classList.add('image-viewer');
-  const title=h('div',{className:'image-title',textContent:'Image Viewer'}),stage=h('div',{className:'image-stage'}),img=h('img',{alt:''}),info=h('div',{className:'image-info'});
-  let scale=1,rotation=0,current='';
-  const apply=()=>img.style.transform=`scale(${scale}) rotate(${rotation}deg)`;
-  const open=async p=>{if(!p||!isImage(p))return;current=p;if(obj)URL.revokeObjectURL(obj);const blob=V.blob?await V.blob(p):new Blob([await V.read(p)]);obj=URL.createObjectURL(blob);img.src=obj;title.textContent=p.split('/').pop();scale=1;rotation=0;apply();info.textContent=p};
-  const tools=h('div',{className:'image-tools'},
-   h('button',{className:'btn',textContent:'−',onclick:()=>{scale=Math.max(.1,scale-.1);apply()}}),
-   h('button',{className:'btn',textContent:'100%',onclick:()=>{scale=1;rotation=0;apply()}}),
-   h('button',{className:'btn',textContent:'+',onclick:()=>{scale=Math.min(8,scale+.1);apply()}}),
-   h('button',{className:'btn',textContent:'↻',onclick:()=>{rotation=(rotation+90)%360;apply()}}));
-  stage.append(img);b.append(title,tools,stage,info);api={open};if(openPath)open(openPath);
+ if(api){if(openPath)api.open(openPath);return win('images','Images',900,650,()=>{})}
+ return win('images','Images',900,650,b=>{
+  b.classList.add('image-editor');let current='',original=null,work=null,history=[],zoom=1,crop=false,start=null,rect=null;
+  const title=h('div',{className:'image-title',textContent:'Images'}),stage=h('div',{className:'image-edit-stage'}),canvas=h('canvas'),info=h('div',{className:'image-info'}),sel=h('div',{className:'crop-box'});stage.append(canvas,sel);const ctx=canvas.getContext('2d',{willReadFrequently:true});
+  const snap=()=>{history.push(ctx.getImageData(0,0,canvas.width,canvas.height));if(history.length>20)history.shift()};
+  const renderImageData=d=>{canvas.width=d.width;canvas.height=d.height;ctx.putImageData(d,0,0);work=ctx.getImageData(0,0,canvas.width,canvas.height);info.textContent=`${current||'Unsaved'} · ${canvas.width} × ${canvas.height}`};
+  const fromBitmap=im=>{canvas.width=im.width;canvas.height=im.height;ctx.clearRect(0,0,canvas.width,canvas.height);ctx.drawImage(im,0,0);work=ctx.getImageData(0,0,canvas.width,canvas.height);original=ctx.getImageData(0,0,canvas.width,canvas.height);history=[];info.textContent=`${current} · ${canvas.width} × ${canvas.height}`};
+  const open=async p=>{if(!p||!isImage(p))return;current=p;const blob=V.blob?await V.blob(p):new Blob([await V.read(p)]),bm=await createImageBitmap(blob);fromBitmap(bm);bm.close?.();title.textContent=p.split('/').pop();zoom=1;applyZoom()};
+  const applyZoom=()=>canvas.style.transform=`scale(${zoom})`;
+  const rotate=dir=>{snap();const old=document.createElement('canvas');old.width=canvas.width;old.height=canvas.height;old.getContext('2d').drawImage(canvas,0,0);canvas.width=old.height;canvas.height=old.width;ctx.translate(canvas.width/2,canvas.height/2);ctx.rotate(dir*Math.PI/2);ctx.drawImage(old,-old.width/2,-old.height/2);ctx.setTransform(1,0,0,1,0,0);work=ctx.getImageData(0,0,canvas.width,canvas.height);info.textContent=`${current} · ${canvas.width} × ${canvas.height}`};
+  const flip=(x,y)=>{snap();const old=document.createElement('canvas');old.width=canvas.width;old.height=canvas.height;old.getContext('2d').drawImage(canvas,0,0);ctx.save();ctx.clearRect(0,0,canvas.width,canvas.height);ctx.translate(x?canvas.width:0,y?canvas.height:0);ctx.scale(x?-1:1,y?-1:1);ctx.drawImage(old,0,0);ctx.restore()};
+  const resize=()=>{const w=+prompt('Width (pixels)',canvas.width);if(!w)return;const hh=+prompt('Height (pixels)',Math.round(canvas.height*w/canvas.width));if(!hh)return;snap();const old=document.createElement('canvas');old.width=canvas.width;old.height=canvas.height;old.getContext('2d').drawImage(canvas,0,0);canvas.width=w;canvas.height=hh;ctx.drawImage(old,0,0,w,hh);info.textContent=`${current} · ${w} × ${hh}`};
+  const bgRemove=()=>{snap();const d=ctx.getImageData(0,0,canvas.width,canvas.height),a=d.data,corners=[[0,0],[canvas.width-1,0],[0,canvas.height-1],[canvas.width-1,canvas.height-1]],avg=[0,0,0];for(const [x,y] of corners){const i=(y*canvas.width+x)*4;avg[0]+=a[i];avg[1]+=a[i+1];avg[2]+=a[i+2]}avg=avg.map(v=>v/4);const tol=+prompt('Background tolerance (10–140)',55)||55;for(let i=0;i<a.length;i+=4){const dist=Math.hypot(a[i]-avg[0],a[i+1]-avg[1],a[i+2]-avg[2]);if(dist<tol)a[i+3]=0;else if(dist<tol*1.6)a[i+3]=Math.round(255*(dist-tol)/(tol*.6))}ctx.putImageData(d,0,0)};
+  const undo=()=>{const d=history.pop();if(d)renderImageData(d)};const reset=()=>original&&renderImageData(original);
+  const save=async(as=false)=>{let fmt=(prompt('Format: png, jpeg, or webp',current.match(/\.(jpe?g|webp)$/i)?.[1]?.replace('jpg','jpeg')||'png')||'png').toLowerCase();if(!['png','jpeg','webp'].includes(fmt))fmt='png';let p=as||!current?prompt('Save path',ext(current||'/Pictures/image.png',fmt==='jpeg'?'jpg':fmt)):current;if(!p)return;const blob=await new Promise(ok=>canvas.toBlob(ok,'image/'+fmt,fmt==='jpeg'?.92:undefined));if(V.put)await V.put(p,blob);else await V.write(p,await blob.arrayBuffer());current=p;title.textContent=p.split('/').pop();dispatchEvent(new CustomEvent('curios:vfs-changed',{detail:{paths:[p]}}));info.textContent=`Saved ${p} · ${canvas.width} × ${canvas.height}`};
+  const cropBtn=h('button',{className:'btn',textContent:'Crop',onclick:()=>{crop=!crop;cropBtn.classList.toggle('active',crop);sel.style.display='none'}});
+  const tools=h('div',{className:'image-tools'},h('button',{className:'btn',textContent:'−',onclick:()=>{zoom=Math.max(.1,zoom-.1);applyZoom()}}),h('button',{className:'btn',textContent:'100%',onclick:()=>{zoom=1;applyZoom()}}),h('button',{className:'btn',textContent:'+',onclick:()=>{zoom=Math.min(5,zoom+.1);applyZoom()}}),cropBtn,h('button',{className:'btn',textContent:'Resize',onclick:resize}),h('button',{className:'btn',textContent:'↶',title:'Rotate left',onclick:()=>rotate(-1)}),h('button',{className:'btn',textContent:'↷',title:'Rotate right',onclick:()=>rotate(1)}),h('button',{className:'btn',textContent:'⇋',title:'Flip horizontal',onclick:()=>flip(1,0)}),h('button',{className:'btn',textContent:'⇅',title:'Flip vertical',onclick:()=>flip(0,1)}),h('button',{className:'btn',textContent:'Remove BG',onclick:bgRemove}),h('button',{className:'btn',textContent:'Undo',onclick:undo}),h('button',{className:'btn',textContent:'Reset',onclick:reset}),h('span',{style:'flex:1'}),h('button',{className:'btn',textContent:'Save',onclick:()=>save(false)}),h('button',{className:'btn',textContent:'Save As',onclick:()=>save(true)}));
+  stage.onpointerdown=e=>{if(!crop)return;const r=canvas.getBoundingClientRect();start={x:(e.clientX-r.left)/zoom,y:(e.clientY-r.top)/zoom};rect={x:e.offsetX,y:e.offsetY,w:0,h:0};sel.style.display='block';sel.style.left=e.offsetX+'px';sel.style.top=e.offsetY+'px'};stage.onpointermove=e=>{if(!start||!crop)return;const r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)/zoom,y=(e.clientY-r.top)/zoom;rect.w=x-start.x;rect.h=y-start.y;sel.style.width=Math.abs(rect.w*zoom)+'px';sel.style.height=Math.abs(rect.h*zoom)+'px'};stage.onpointerup=e=>{if(!start||!crop)return;const r=canvas.getBoundingClientRect(),x2=(e.clientX-r.left)/zoom,y2=(e.clientY-r.top)/zoom,x=Math.max(0,Math.min(start.x,x2)),y=Math.max(0,Math.min(start.y,y2)),w=Math.min(canvas.width-x,Math.abs(x2-start.x)),hh=Math.min(canvas.height-y,Math.abs(y2-start.y));start=null;sel.style.display='none';crop=false;cropBtn.classList.remove('active');if(w<2||hh<2)return;snap();const d=ctx.getImageData(Math.round(x),Math.round(y),Math.round(w),Math.round(hh));renderImageData(d)};
+  b.append(title,tools,stage,info);api={open};if(openPath)open(openPath)
  })
 }

@@ -8,9 +8,9 @@ const B=b=>{let s='';new Uint8Array(b).forEach(c=>s+=String.fromCharCode(c));ret
 const kd=async(pw,salt)=>crypto.subtle.deriveKey({name:'PBKDF2',salt,iterations:250000,hash:'SHA-256'},await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']),{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
 const en=async(k,o)=>{const iv=crypto.getRandomValues(new Uint8Array(12));return{iv:B(iv),ct:B(await crypto.subtle.encrypt({name:'AES-GCM',iv},k,new TextEncoder().encode(JSON.stringify(o))))}};
 const de=async(k,r)=>JSON.parse(new TextDecoder().decode(await crypto.subtle.decrypt({name:'AES-GCM',iv:U(r.iv)},k,U(r.ct))));
-export const vm=()=>{if(remote)return VC||null;try{return JSON.parse(localStorage.getItem('wos.vault'))}catch{return null}},vs=m=>{if(remote){setSys({VC:m});kvPut('vault',m);return}try{localStorage.setItem('wos.vault',JSON.stringify(m))}catch{}};
+export const vm=()=>{if(remote)return VC||null;try{return JSON.parse(localStorage.getItem('curios.vault'))}catch{return null}},vs=m=>{if(remote){setSys({VC:m});kvPut('vault',m);return}try{localStorage.setItem('curios.vault',JSON.stringify(m))}catch{}};
 export let vkey=null,vitems=[],vlock=null,vnote='';
-const vdestroy=why=>{if(remote){setSys({VC:null});kvPut('vault',{})}else localStorage.removeItem('wos.vault');vkey=null;vitems=[];vnote=why||''};
+const vdestroy=why=>{if(remote){setSys({VC:null});kvPut('vault',{})}else localStorage.removeItem('curios.vault');vkey=null;vitems=[];vnote=why||''};
 export function vault(){win('vault','Vault',440,470,()=>{},()=>clearTimeout(vlock));vrender()}
 function vrender(){const b=wins.vault?.bd;if(!b)return;const m=vm();b.replaceChildren();
  const pw=h('input',{type:'password',placeholder:'Password'}),msg=h('div',{className:'msg',textContent:vnote}),go=h('button',{className:'btn'});vnote='';

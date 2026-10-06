@@ -4,7 +4,7 @@ import {AIService,aiConfig} from '../kernel/ai-service.js';
 import {samProfile} from '../kernel/sam-profile.js';
 import {win} from '../shell/wm.js';
 
-const HIST='wos.sam.conversation.v1';
+const HIST='curios.sam.conversation.v1';
 let api=null;
 const load=()=>{try{return JSON.parse(localStorage.getItem(HIST)||'[]')}catch{return[]}},save=x=>{try{localStorage.setItem(HIST,JSON.stringify(x.slice(-80)))}catch{}};
 export function sam(){

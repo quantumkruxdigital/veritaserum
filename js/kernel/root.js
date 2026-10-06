@@ -1,4 +1,4 @@
-// Ephemeral terminal super-user state and destructive WebOS reset.
+// Ephemeral terminal super-user state and destructive CuriOS reset.
 // Root is never persisted. Supabase accounts are re-authenticated with the account password.
 import {CFG} from './config.js';
 import {LocalFS} from './localfs.js';
@@ -10,17 +10,17 @@ export const isRoot=()=>root;
 
 export async function becomeRoot(password){
   if(root)return true;
-  if(!CFG.supabaseUrl||!SB?.email)throw'`su` requires a signed-in WebOS account.';
+  if(!CFG.supabaseUrl||!SB?.email)throw'`su` requires a signed-in CuriOS account.';
   if(!password)throw'authentication cancelled';
   await sbAuth('token?grant_type=password',{email:SB.email,password});
   root=true;
-  window.dispatchEvent(new CustomEvent('wos:root-change',{detail:{root:true}}));
+  window.dispatchEvent(new CustomEvent('curios:root-change',{detail:{root:true}}));
   return true;
 }
 
 export function dropRoot(){
   root=false;
-  window.dispatchEvent(new CustomEvent('wos:root-change',{detail:{root:false}}));
+  window.dispatchEvent(new CustomEvent('curios:root-change',{detail:{root:false}}));
 }
 
 async function wipeChildren(path){
@@ -33,11 +33,11 @@ async function wipeChildren(path){
   }
 }
 
-function clearWebOSLocalStorage(){
+function clearCuriOSLocalStorage(){
   const keys=[];
   for(let i=0;i<localStorage.length;i++){
     const k=localStorage.key(i);
-    if(k?.startsWith('wos.'))keys.push(k);
+    if(k?.startsWith('curios.'))keys.push(k);
   }
   for(const k of keys)localStorage.removeItem(k);
 }
@@ -45,7 +45,7 @@ function clearWebOSLocalStorage(){
 export async function obliterateSystem(){
   if(!root)throw'root privileges required';
   // Stop desktop-state autosave before deleting remote state, otherwise it can recreate data mid-wipe.
-  window.dispatchEvent(new CustomEvent('wos:self-destruct'));
+  window.dispatchEvent(new CustomEvent('curios:self-destruct'));
 
   // Delete everything visible through the active VFS, including mounted /work contents.
   await wipeChildren('/');
@@ -56,8 +56,8 @@ export async function obliterateSystem(){
     await SupaKV.del('vault').catch(()=>0);
   }
 
-  // Also erase browser-local fallback files and all WebOS-owned browser settings/state.
+  // Also erase browser-local fallback files and all CuriOS-owned browser settings/state.
   await LocalFS.wipe().catch(()=>0);
-  clearWebOSLocalStorage();
+  clearCuriOSLocalStorage();
   dropRoot();
 }

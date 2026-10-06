@@ -1,13 +1,13 @@
 // Browser-only filesystem. Text metadata lives in localStorage; binary payloads live in IndexedDB.
 export let fs={};
-try{fs=JSON.parse(localStorage.getItem('wos.fs'))||{}}catch{}
+try{fs=JSON.parse(localStorage.getItem('curios.fs'))||{}}catch{}
 if(!fs['/'])fs={'/':{t:'d'}};
 for(const d of ['/Documents','/Music','/Pictures','/Videos','/Downloads'])if(!fs[d])fs[d]={t:'d'};
-const fsave=()=>{try{localStorage.setItem('wos.fs',JSON.stringify(fs))}catch{}};
+const fsave=()=>{try{localStorage.setItem('curios.fs',JSON.stringify(fs))}catch{}};
 export const res=(c,p)=>{const o=[];for(const s of(p[0]=='/'?p:c+'/'+p).split('/'))if(s=='..')o.pop();else if(s&&s!='.')o.push(s);return'/'+o.join('/')};
 const par=k=>k.slice(0,k.lastIndexOf('/')||1);
 export const kids=p=>Object.keys(fs).filter(k=>k!=p&&par(k)==p);
-const dbp=new Promise((ok,no)=>{const r=indexedDB.open('wos.files',1);r.onupgradeneeded=()=>r.result.createObjectStore('blobs');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
+const dbp=new Promise((ok,no)=>{const r=indexedDB.open('curios.files',1);r.onupgradeneeded=()=>r.result.createObjectStore('blobs');r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)});
 const idb=(mode,fn)=>dbp.then(db=>new Promise((ok,no)=>{const tx=db.transaction('blobs',mode),s=tx.objectStore('blobs'),r=fn(s);r.onsuccess=()=>ok(r.result);r.onerror=()=>no(r.error)}));
 const bput=(k,b)=>idb('readwrite',s=>s.put(b,k)),bget=k=>idb('readonly',s=>s.get(k)),bdel=k=>idb('readwrite',s=>s.delete(k));
 export const wr=(k,c)=>{if(fs[par(k)]?.t!='d')throw'no such folder: '+par(k);if(fs[k]?.t=='d')throw'is a folder';fs[k]={t:'f',c:String(c),size:String(c).length,mime:'text/plain'};fsave();bdel(k).catch(()=>0)};

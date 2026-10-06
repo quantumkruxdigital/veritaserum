@@ -6,7 +6,7 @@ import {isRoot} from '../kernel/root.js';
 const tp=$('#tp'),root=h('div',{className:'split'});
 tp.append(root);
 export let H=[];
-try{H=JSON.parse(localStorage.getItem('wos.hist'))||[]}catch{}
+try{H=JSON.parse(localStorage.getItem('curios.hist'))||[]}catch{}
 export let act=null;
 function pane(cwd){
  const out=h('div',{className:'out'}),inp=h('input',{spellcheck:false,autocomplete:'off'}),pr=h('span',{className:'p'}),el=h('div',{className:'pane'},out,h('div',{className:'ln'},pr,inp));
@@ -21,7 +21,7 @@ function pane(cwd){
    if(e.key=='Enter'){const q=io._secret,v=inp.value;io._secret=null;inp.type='text';inp.value='';pp();q.ok(v);return}
    return
   }
-  if(e.ctrlKey&&e.key=='c'&&io.ac){io.ac.abort();return}if(e.key=='Escape')return togTerm(false);if(e.key=='Enter'&&inp.value.trim()){const line=inp.value;H.push(line);H=H.slice(-100);hi=H.length;try{localStorage.setItem('wos.hist',JSON.stringify(H))}catch{}inp.value='';io.say((isRoot()?'root:'+io.cwd+' # ':io.cwd+' › ')+line,'p');const a=(line.match(/"[^"]*"|\S+/g)||[]).map(x=>x.replace(/^"|"$/g,'')),c=cmds[a.shift()];try{c?Promise.resolve(c.f(a,io)).catch(x=>io.say(String(x?.message||x),'e')).finally(pp):io.say('unknown command (try help)','e')}catch(x){io.say(String(x),'e')}pp()}else if(e.key=='ArrowUp'&&hi>0)inp.value=H[--hi];else if(e.key=='ArrowDown')inp.value=H[++hi]||''};
+  if(e.ctrlKey&&e.key=='c'&&io.ac){io.ac.abort();return}if(e.key=='Escape')return togTerm(false);if(e.key=='Enter'&&inp.value.trim()){const line=inp.value;H.push(line);H=H.slice(-100);hi=H.length;try{localStorage.setItem('curios.hist',JSON.stringify(H))}catch{}inp.value='';io.say((isRoot()?'root:'+io.cwd+' # ':io.cwd+' › ')+line,'p');const a=(line.match(/"[^"]*"|\S+/g)||[]).map(x=>x.replace(/^"|"$/g,'')),c=cmds[a.shift()];try{c?Promise.resolve(c.f(a,io)).catch(x=>io.say(String(x?.message||x),'e')).finally(pp):io.say('unknown command (try help)','e')}catch(x){io.say(String(x),'e')}pp()}else if(e.key=='ArrowUp'&&hi>0)inp.value=H[--hi];else if(e.key=='ArrowDown')inp.value=H[++hi]||''};
  return el}
 const panes=()=>tp.querySelectorAll('.pane');
 export function split(el,dir){if(panes().length>=8)throw'pane limit reached (8)';const n=pane(el.io.cwd),sp=h('div',{className:'split'+(dir=='h'?' col':'')});el.parentNode.replaceChild(sp,el);sp.append(el,n);n.inp.focus()}
@@ -34,4 +34,4 @@ p0.classList.add('act');
 addEventListener('keydown',e=>{if(e.ctrlKey&&e.code=='Space'){e.preventDefault();togTerm()}});
 export function setHist(a){H=a}
 
-addEventListener('wos:root-change',()=>document.querySelectorAll('.pane').forEach(p=>{const io=p.io,pr=p.querySelector('.p');if(io&&pr&&!io._secret)pr.textContent=isRoot()?('root:'+io.cwd+' # '):(io.cwd+' ›')}));
+addEventListener('curios:root-change',()=>document.querySelectorAll('.pane').forEach(p=>{const io=p.io,pr=p.querySelector('.p');if(io&&pr&&!io._secret)pr.textContent=isRoot()?('root:'+io.cwd+' # '):(io.cwd+' ›')}));

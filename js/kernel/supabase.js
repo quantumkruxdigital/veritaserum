@@ -2,8 +2,8 @@
 import {CFG} from './config.js';
 
 export let SB=null;
-try{SB=JSON.parse(localStorage.getItem('wos.sb'))}catch{}
-export const sbSave=o=>{SB=o;try{o?localStorage.setItem('wos.sb',JSON.stringify(o)):localStorage.removeItem('wos.sb')}catch{}};
+try{SB=JSON.parse(localStorage.getItem('curios.sb'))}catch{}
+export const sbSave=o=>{SB=o;try{o?localStorage.setItem('curios.sb',JSON.stringify(o)):localStorage.removeItem('curios.sb')}catch{}};
 export async function sbAuth(path,body){const r=await fetch(CFG.supabaseUrl+'/auth/v1/'+path,{method:'POST',headers:{apikey:CFG.supabaseKey,'Content-Type':'application/json'},body:JSON.stringify(body)}).catch(()=>null);if(!r)throw'Supabase unreachable.';const j=await r.json().catch(()=>({}));if(!r.ok)throw j.error_description||j.msg||j.message||'sign-in failed ('+r.status+')';return j}
 export const sbSet=j=>sbSave({access_token:j.access_token,refresh_token:j.refresh_token,exp:Date.now()+((j.expires_in||3600)-30)*1000,email:j.user?.email||SB?.email,uid:j.user?.id||SB?.uid});
 let rfp;
