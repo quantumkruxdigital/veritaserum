@@ -1,5 +1,5 @@
 // CuriOS sign-in screen with a lightweight animated digital-space backdrop.
-import {sbAuth, sbSet} from '../kernel/supabase.js';
+import {SB, sbAuth, sbSet} from '../kernel/supabase.js';
 import {$, h} from '../kernel/util.js';
 
 function digitalSpace(canvas){const x=canvas.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;let dots=[],raf=0,w=0,hh=0,dpr=1;
@@ -9,3 +9,13 @@ function digitalSpace(canvas){const x=canvas.getContext('2d'),reduce=matchMedia(
 export function showLogin(msg){const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg',textContent:msg||''}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'});
  const go=async up=>{m.style.color='';m.textContent='';try{const j=await sbAuth(up?'signup':'token?grant_type=password',{email:e.value.trim(),password:p.value});if(!j.access_token){m.style.color='var(--dim)';m.textContent='Check your email to confirm the account, then sign in.';return}sbSet(j);location.reload()}catch(x){m.textContent=String(x)}};p.onkeydown=ev=>ev.key=='Enter'&&go(0);
  const lock=h('div',{id:'lock'},canvas,h('div',{className:'login-scanlines','aria-hidden':'true'}),h('div',{className:'vf login-panel'},h('div',{className:'login-brand',textContent:'CuriOS'}),h('div',{className:'login-title',textContent:'Sign in to your desktop'}),e,p,h('button',{className:'btn',textContent:'Sign in',onclick:()=>go(0)}),h('button',{className:'btn',textContent:'Create account',onclick:()=>go(1)}),m));$('#fit').append(lock);digitalSpace(canvas);setTimeout(()=>e.focus(),50)}
+
+export function showLock(onUnlock){
+ if(document.querySelector('#lock'))return;
+ const p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg'}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'});
+ const unlock=async()=>{m.textContent='';try{if(SB?.email){const j=await sbAuth('token?grant_type=password',{email:SB.email,password:p.value});if(!j.access_token)throw'Unable to unlock.';sbSet(j)}document.querySelector('#lock')?.remove();onUnlock?.()}catch(x){m.textContent=String(x);p.select()}};
+ p.onkeydown=e=>e.key=='Enter'&&unlock();
+ const panel=h('div',{className:'vf login-panel lock-panel'},h('div',{className:'login-brand',textContent:'CuriOS'}),h('div',{className:'login-title',textContent:'Session locked'}),SB?.email?h('div',{className:'lock-user',textContent:SB.email}):h('div',{className:'lock-user',textContent:'Local session'}),p,h('button',{className:'btn',textContent:'Unlock',onclick:unlock}),m);
+ if(!SB?.email){p.style.display='none';panel.querySelector('.login-title').textContent='Session locked';}
+ const lock=h('div',{id:'lock'},canvas,h('div',{className:'login-scanlines','aria-hidden':'true'}),panel);$('#fit').append(lock);digitalSpace(canvas);setTimeout(()=>SB?.email?p.focus():panel.querySelector('button')?.focus(),50)
+}

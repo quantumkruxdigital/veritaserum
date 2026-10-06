@@ -15,8 +15,9 @@ import {$, h} from '../kernel/util.js';
 import {DEV} from '../kernel/vfs.js';
 import {S, show, wins} from './wm.js';
 import {togTerm} from '../term/terminal.js';
+import {lockSession, logoutSession} from './session.js';
 
-const I={menu:'<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',term:'<path d="M4 6l6 6-6 6M12 19h8"/>',vol:'<path d="M4 9h4l5-4v14l-5-4H4zM17 8c2 2 2 6 0 8"/>',files:'<path d="M3 7 a2 2 0 0 1 2-2 h4 l2 2 h8 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H5 a2 2 0 0 1-2-2 z"/>',vault:'<rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 018 0v3"/>'};
+const I={menu:'<path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z"/>',term:'<path d="M4 6l6 6-6 6M12 19h8"/>',vol:'<path d="M4 9h4l5-4v14l-5-4H4zM17 8c2 2 2 6 0 8"/>',files:'<path d="M3 7 a2 2 0 0 1 2-2 h4 l2 2 h8 a2 2 0 0 1 2 2 v8 a2 2 0 0 1-2 2 H5 a2 2 0 0 1-2-2 z"/>',vault:'<rect x="5" y="11" width="14" height="9"/><path d="M8 11V8a4 4 0 018 0v3"/>',session:'<path d="M12 3v9M7.2 5.8a8 8 0 1 0 9.6 0"/>'};
 document.querySelectorAll('#dock button').forEach(b=>b.innerHTML='<svg viewBox="0 0 24 24">'+I[b.dataset.a]+'</svg>');
 export const tick=()=>{const d=new Date(),p=n=>String(n).padStart(2,'0');let H=d.getHours();const s=set.h24?'':H>=12?' PM':' AM';if(!set.h24)H=H%12||12;$('#clk').textContent=`${p(H)}:${p(d.getMinutes())}:${p(d.getSeconds())}${s}`};
 tick();
@@ -26,6 +27,6 @@ function popAt(btn,...c){const r=btn.getBoundingClientRect(),f=$('#fit').getBoun
 $('#dock').onclick=e=>{const b=e.target.closest('button');if(!b)return;e.stopPropagation();const a=b.dataset.a;
  if(a=='menu'){const run=Object.entries(wins).map(([id,w])=>h('button',{textContent:(w.e.style.display=='none'?'○ ':'● ')+w.t,onclick(){closePop();show(id)}}));
   popAt(b,...[['Media',()=>media()],['Images',()=>imageViewer()],['Video Importer',()=>videoImporter()],['Scribe',()=>scribe('/Documents/untitled.scribe')],['SAM',()=>sam()],['Alchemy',alchemy],['Settings',settings],['Vault',vault]].map(([t,f])=>h('button',{textContent:t,onclick(){closePop();f()}})),...(run.length?[h('div',{className:'hd',textContent:'Running (○ = minimized)',style:'margin:8px 0 2px;padding:0 10px'}),...run]:[]))}
- else if(a=='term')togTerm();else if(a=='files')files();else if(a=='vault')vault();
+ else if(a=='term')togTerm();else if(a=='files')files();else if(a=='vault')vault();else if(a=='session'){popAt(b,h('div',{className:'hd',textContent:'Session'}),h('button',{textContent:'Lock',onclick(){closePop();lockSession()}}),h('button',{textContent:'Log Out',onclick(){closePop();logoutSession()}}));}
  else if(a=='vol'){const m=h('input',{type:'checkbox',checked:!!set.mute,onchange(){set.mute=+m.checked;sv();if(DEV)dev('volume',set.mute?'mute':'unmute').catch(()=>0)}}),r=h('input',{type:'range',min:0,max:100,value:set.vol,style:'width:100%',oninput(){set.vol=+r.value;set.mute=0;m.checked=false;sv();if(DEV)dev('volume','set',set.vol).then(()=>dev('volume','unmute')).catch(()=>0)}});popAt(b,h('label',{className:'s'},'Volume',r),h('label',{className:'s'},'Mute',m),h('button',{textContent:'Test tone',onclick:beep}))}};
 addEventListener('pointerdown',e=>{if(!e.target.closest('#pop,#dock'))closePop()});

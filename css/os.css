@@ -66,3 +66,12 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 
 /* CuriOS login: animated teal digital space + restrained CRT scanlines */
 #lock{overflow:hidden;background:#02151d}.login-space{position:absolute;inset:0;width:100%;height:100%;z-index:0}.login-scanlines{pointer-events:none;position:absolute;inset:0;z-index:1;opacity:.14;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,#8affec18 4px,#00101622 5px);mix-blend-mode:screen}.login-panel{position:relative;z-index:2;background:#06141ddd!important;border:1px solid #4de3dc55!important;box-shadow:0 24px 70px #001017cc,0 0 35px #37d8cf18;backdrop-filter:blur(18px)}.login-brand{text-align:center;color:#79fff0;font:700 25px system-ui;letter-spacing:.12em;text-shadow:0 0 18px #43e8dd66;margin-bottom:2px}.login-title{text-align:center;color:#d9fffb;font:500 13px system-ui;margin-bottom:8px}@media (prefers-reduced-motion:reduce){.login-scanlines{opacity:.09}}
+
+
+/* CuriOS glass window surfaces */
+.win{isolation:isolate}
+.win>.bd{background:color-mix(in srgb,var(--pan) 91%,transparent);backdrop-filter:blur(14px) saturate(118%);-webkit-backdrop-filter:blur(14px) saturate(118%);box-shadow:inset 0 1px 0 #ffffff0a}
+#pop,.ctx,.ctx-sub,.wp-menu{background:color-mix(in srgb,var(--bar) 90%,transparent);backdrop-filter:blur(14px) saturate(118%);-webkit-backdrop-filter:blur(14px) saturate(118%)}
+/* Editing/content surfaces remain optically solid for fidelity and legibility. */
+.wp-editor,.wp-source,.image-edit-stage,.media-stage,.media-stage video{opacity:1}
+.lock-user{text-align:center;color:var(--dim);font-size:11px;margin:-2px 0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
