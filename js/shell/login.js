@@ -15,12 +15,23 @@ function digitalSpace(canvas){
  const resize=()=>{const r=canvas.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);w=Math.max(1,r.width);hh=Math.max(1,r.height);canvas.width=w*dpr;canvas.height=hh*dpr;x.setTransform(dpr,0,0,dpr,0,0);const count=Math.max(70,Math.min(180,Math.round(w*hh/9000)));dots=Array.from({length:count},(_,i)=>({x:Math.random()*w,y:Math.random()*hh,ox:0,oy:0,z:.25+Math.random()*.9,v:.05+Math.random()*.18,s:.7+Math.random()*1.8,i}))};
  const target=(d,r)=>{const pr=panel?.getBoundingClientRect(),cr=canvas.getBoundingClientRect();const cx=(pr?pr.left+pr.width/2:cr.left+w/2)-cr.left,cy=(pr?pr.top+pr.height/2:cr.top+hh/2)-cr.top;const rx=(pr?pr.width*.67:Math.min(w,hh)*.24),ry=(pr?pr.height*.72:Math.min(w,hh)*.3);const gap=.72;const a=gap+(Math.PI*2-gap*2)*(d.i/Math.max(1,dots.length-1));return{x:cx+Math.cos(a)*rx,y:cy+Math.sin(a)*ry}}
  const ease=v=>1-Math.pow(1-Math.max(0,Math.min(1,v)),3);
- const draw=t=>{if(!canvas.isConnected)return; x.clearRect(0,0,w,hh);const g=x.createRadialGradient(w*.5,hh*.42,0,w*.5,hh*.42,Math.max(w,hh)*.75);g.addColorStop(0,'#0a5862');g.addColorStop(.45,'#063d4b');g.addColorStop(1,'#02151d');x.fillStyle=g;x.fillRect(0,0,w,hh);
+ const draw=t=>{if(!canvas.isConnected)return; x.clearRect(0,0,w,hh);
+  // Brilliant white digital space with soft dimensional falloff. Kept in the
+  // canvas itself so login and lock render identically regardless of CSS cache.
+  const g=x.createRadialGradient(w*.47,hh*.36,0,w*.5,hh*.48,Math.max(w,hh)*.82);
+  g.addColorStop(0,'#ffffff');g.addColorStop(.48,'#fbfdff');g.addColorStop(.78,'#f0f4f7');g.addColorStop(1,'#d9e0e5');x.fillStyle=g;x.fillRect(0,0,w,hh);
+  const depth=x.createRadialGradient(w*.5,hh*.5,Math.min(w,hh)*.18,w*.5,hh*.5,Math.max(w,hh)*.72);depth.addColorStop(0,'rgba(255,255,255,0)');depth.addColorStop(.72,'rgba(80,105,118,.025)');depth.addColorStop(1,'rgba(25,42,52,.12)');x.fillStyle=depth;x.fillRect(0,0,w,hh);
   const elapsed=mode==='idle'?0:t-start;
   for(const d of dots){
    if(mode==='idle'&&!reduce){d.y-=d.v*d.z*(1+Math.sin(t*.00025+d.x)*.25);d.x+=Math.sin(t*.00018+d.y*.01)*.035*d.z;if(d.y<-8){d.y=hh+8;d.x=Math.random()*w}}
    else if(mode==='reveal'&&!reduce){const q=target(d);let k=ease((elapsed-350)/1450);if(elapsed<350){const pr=panel?.getBoundingClientRect(),cr=canvas.getBoundingClientRect();const cx=(pr?pr.left+pr.width/2:cr.left+w/2)-cr.left,cy=(pr?pr.top+pr.height/2:cr.top+hh/2)-cr.top;const a=Math.atan2(d.y-cy,d.x-cx)+elapsed*.004;const rr=Math.hypot(d.x-cx,d.y-cy)*(1-elapsed/350*.18);d.x=cx+Math.cos(a)*rr;d.y=cy+Math.sin(a)*rr}else{d.x=d.ox+(q.x-d.ox)*k;d.y=d.oy+(q.y-d.oy)*k}}
-   const pulse=.65+.3*Math.sin(t*.0014+d.x);x.globalAlpha=Math.max(.2,pulse*d.z);x.fillStyle=d.z>.65?'#8affec':'#40cbd3';x.shadowColor='#55f5e7';x.shadowBlur=mode==='reveal'&&elapsed>1500?8:2;x.beginPath();x.arc(d.x,d.y,d.s*d.z*(mode==='reveal'&&elapsed>1500?1.35:1),0,Math.PI*2);x.fill();x.shadowBlur=0
+   const pulse=.68+.3*Math.sin(t*.0014+d.x),r=d.s*d.z*(mode==='reveal'&&elapsed>1500?1.35:1),a=Math.max(.26,pulse*d.z);
+   // High-contrast depth pass: a dense black/charcoal shadow slightly below the
+   // particle makes the existing cyan/green palette read crisply on white.
+   x.globalAlpha=Math.min(.82,a*.9);x.fillStyle='#071116';x.shadowColor='rgba(0,0,0,.72)';x.shadowBlur=6+5*d.z;x.beginPath();x.arc(d.x+1.6*d.z,d.y+2.2*d.z,r*1.18,0,Math.PI*2);x.fill();
+   // Luminous colour pass. Preserve the CuriOS teal/cyan family, but increase
+   // saturation and core brightness for the new white environment.
+   x.globalAlpha=a;x.fillStyle=d.z>.72?'#42ffd7':d.z>.48?'#00dbe8':'#00a9d6';x.shadowColor=d.z>.65?'#00f6cf':'#00bde8';x.shadowBlur=mode==='reveal'&&elapsed>1500?13:5;x.beginPath();x.arc(d.x,d.y,r,0,Math.PI*2);x.fill();x.globalAlpha=Math.min(1,a+.18);x.fillStyle='#dffff8';x.shadowBlur=0;x.beginPath();x.arc(d.x-r*.22,d.y-r*.25,Math.max(.38,r*.28),0,Math.PI*2);x.fill();x.shadowBlur=0
   }x.globalAlpha=1;
   if(mode==='reveal'&&elapsed>=3000){mode='done';const cb=done;done=null;cb?.();return}raf=requestAnimationFrame(draw)};
  resize();addEventListener('resize',resize,{passive:true});draw(0);
