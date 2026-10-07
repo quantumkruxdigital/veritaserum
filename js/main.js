@@ -10,6 +10,7 @@ import {settings} from './apps/settings.js';
 import {vault} from './apps/vault.js';
 import {photoAlbum} from './apps/photo-album.js';
 import {reelMagick,isReelProject} from './apps/reel-magick.js';
+import {ppl} from './apps/ppl.js';
 import {cmd} from './kernel/cmds.js';
 import {CFG} from './kernel/config.js';
 import {LocalFS, fs, kids, mk, res, rmf, wr} from './kernel/localfs.js';
@@ -46,7 +47,7 @@ async function boot(){const say=t=>act.io.say(t);
   try{const j=await(await api('/api/sys')).json();setSys({DEV:!!j.device,RUNNER:!!j&&'device' in j})}catch{}
   const d=await KV.get('desk'),v=await KV.get('vault');setSys({VC:v&&v.salt?v:null});
   Object.assign(set,d.set||{});document.documentElement.style.setProperty('--cy',set.ac);await applyWallpaper(set.wallpaper);tick();if(Array.isArray(d.hist))setHist(d.hist);
-  const ops={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),sam:()=>sam(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),vault:()=>vault(),sys:()=>settings()};
+  const ops={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),sam:()=>sam(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),ppl:()=>ppl(),vault:()=>vault(),sys:()=>settings()};
   for(const w of d.win||[]){const f=w.id.startsWith('scribe:')?()=>scribe(w.id.slice(7)):ops[w.id];if(!f)continue;f();const x=wins[w.id];if(!x)continue;Object.assign(x.e.style,{left:w.l,top:w.t,width:w.w,height:w.h});x.e.mx=w.mx||0;if(w.hide)x.e.style.display='none'}
   let last=JSON.stringify({set,hist:H,win:layout()}),syncing=true;
   addEventListener('curios:self-destruct',()=>{syncing=false},{once:true});
@@ -55,7 +56,7 @@ async function boot(){const say=t=>act.io.say(t);
  }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}}
 boot();
 addEventListener('curios:authenticated',()=>boot(),{once:true});
-const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),sam:()=>sam(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),sys:()=>settings(),vault:()=>vault()};
+const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),sam:()=>sam(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),ppl:()=>ppl(),sys:()=>settings(),vault:()=>vault()};
 configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=await V.stat(p).catch(()=>null);if(st?.type=='d')files(p);else if(isReelProject(p))reelMagick(p);else if(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(p))imageViewer(p);else if(/\.(mp4|webm|ogv|mov|m4v|mkv)$/i.test(p))reelMagick(p);else if(p)files(p)}});
 // Terminal owns both Ctrl+Space and the curios:terminal-toggle event directly.
 act.io.say('kernel ready · '+Object.keys(fs).length+' fs nodes · terminal resident (Ctrl+Space)');

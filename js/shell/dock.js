@@ -10,6 +10,7 @@ import {settings} from '../apps/settings.js';
 import {vault} from '../apps/vault.js';
 import {photoAlbum} from '../apps/photo-album.js';
 import {reelMagick} from '../apps/reel-magick.js';
+import {ppl} from '../apps/ppl.js';
 import {beep} from '../kernel/audio.js';
 import {dev} from '../kernel/device.js';
 import {set,sv} from '../kernel/state.js';
@@ -23,15 +24,16 @@ const ORDER_KEY='curios.dock.order.v1';
 const LEGACY_POS_KEY='curios.dock.launcherPosition.v1';
 
 const apps={
- files:{name:'Files',open:files},
+ files:{name:'Files',open:files,icon:'assets/apps/files.png'},
  media:{name:'Media',open:media,icon:'assets/apps/media.png'},
  images:{name:'Images',open:imageViewer,icon:'assets/apps/images.png'},
- videoimport:{name:'Video Importer',open:videoImporter},
+ videoimport:{name:'Video Importer',open:videoImporter,icon:'assets/apps/videoimport.png'},
  scribe:{name:'Scribe',open:()=>scribe('/Documents/untitled.scribe'),icon:'assets/apps/scribe.png'},
  sam:{name:'SAM',open:sam},
  alchemy:{name:'Alchemy',open:alchemy,icon:'assets/apps/alchemy.png'},
  photos:{name:'Photo Album',open:photoAlbum,icon:'assets/apps/photoalbum.png'},
  reelmagick:{name:'Reel-Magick',open:reelMagick,icon:'assets/apps/reelmagick.png'},
+ ppl:{name:'CuriOS-Ppl',open:ppl,icon:'assets/apps/ppl.png'},
  vault:{name:'Vault',open:vault,icon:'assets/apps/vault.png'},
  sys:{name:'Settings',open:settings,icon:'assets/apps/settings.png'}
 };
@@ -183,7 +185,7 @@ $('#dock').onclick=e=>{
  e.stopPropagation();const a=b.dataset.a;
  if(a==='menu'){
   if(editMode)return;
-  const ids=['files','media','images','videoimport','scribe','sam','alchemy','photos','reelmagick','vault'];
+  const ids=['files','media','images','videoimport','scribe','sam','alchemy','photos','reelmagick','ppl','vault'];
   const run=Object.entries(wins).map(([id,w])=>h('button',{textContent:(w.e.style.display==='none'?'○ ':'● ')+w.t,onclick(){closePop();show(id)}}));
   popAt(b,...ids.map(appEntry),h('div',{className:'launcher-settings-divider'}),appEntry('sys'),...(run.length?[h('div',{className:'hd',textContent:'Running (○ = minimized)',style:'margin:8px 0 2px;padding:0 10px'}),...run]:[]));
  }else if(a==='session'){
