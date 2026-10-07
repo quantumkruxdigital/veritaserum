@@ -31,7 +31,9 @@ const p0=pane('/Documents');
 root.append(p0);
 act=p0;
 p0.classList.add('act');
-addEventListener('keydown',e=>{if(e.ctrlKey&&e.code=='Space'){e.preventDefault();togTerm()}});
+const terminalHotkey=e=>{if(e.ctrlKey&&(e.code==='Space'||e.key===' ')){e.preventDefault();e.stopPropagation();togTerm()}};
+addEventListener('keydown',terminalHotkey,{capture:true});
+addEventListener('curios:terminal-toggle',()=>togTerm());
 export function setHist(a){H=a}
 
 addEventListener('curios:root-change',()=>document.querySelectorAll('.pane').forEach(p=>{const io=p.io,pr=p.querySelector('.p');if(io&&pr&&!io._secret)pr.textContent=isRoot()?('root:'+io.cwd+' # '):(io.cwd+' ›')}));

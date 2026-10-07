@@ -54,7 +54,7 @@ if(location.hash.startsWith('#t=')){try{localStorage.setItem('curios.token',deco
  }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}})();
 const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),sam:()=>sam(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),sys:()=>settings(),vault:()=>vault()};
 configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=await V.stat(p).catch(()=>null);if(st?.type=='d')files(p);else if(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(p))imageViewer(p);else if(p)files(p)}});
-addEventListener('curios:terminal-toggle',()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',ctrlKey:true,bubbles:true})));
+// Terminal owns both Ctrl+Space and the curios:terminal-toggle event directly.
 act.io.say('kernel ready · '+Object.keys(fs).length+' fs nodes · terminal resident (Ctrl+Space)');
 window.os={cmd,fs:{res,kids,wr,mk,rmf},win,set};
 

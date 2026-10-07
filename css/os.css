@@ -103,3 +103,11 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 /* Enlarged CuriOS gradient-glass login panel */
 .login-panel{width:430px!important;padding:32px 36px!important;border-radius:18px!important;background:linear-gradient(145deg,#0b3544d9 0%,#09212fdd 48%,#111b36dc 100%)!important;border:1px solid #69fff061!important;box-shadow:0 30px 90px #001017e8,0 0 55px #37d8cf24,inset 0 1px 0 #ffffff14!important;backdrop-filter:blur(24px) saturate(125%)!important}.login-brand{font-size:31px!important;margin-bottom:7px!important}.login-title{margin-bottom:18px!important}
 @media(max-width:600px){.login-panel{width:min(90vw,410px)!important;padding:24px!important}.pa-body{display:block;overflow:auto}.pa-side{width:auto;border-right:0;border-bottom:1px solid var(--ln);display:flex;gap:5px;overflow-x:auto}.pa-side .hd{display:none}.pa-side button{width:auto;white-space:nowrap}.pa-main{overflow:visible}.pa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.collage-shell{display:flex;flex-direction:column}.collage-pick{grid-template-columns:repeat(4,1fr);max-height:180px}.dock-pins{overflow:hidden;max-width:150px}.dock-app img{width:28px;height:28px}}
+/* Signature CuriOS authentication transition: drifting field -> orbital C -> desktop. */
+#lock.login-success .login-panel input,#lock.login-success .login-panel button,#lock.login-success .login-panel .msg{transition:opacity .35s ease;opacity:0;pointer-events:none}
+#lock.login-revealing .login-panel{transition:transform 3s cubic-bezier(.2,.7,.2,1),opacity .55s ease 2.45s,box-shadow 1s ease;transform:scale(.985);box-shadow:0 30px 100px #001017e8,0 0 70px #4dffe738,inset 0 1px 0 #ffffff14!important}
+#lock.login-revealing .login-brand,#lock.login-revealing .login-title,#lock.login-revealing .lock-user{transition:opacity .55s ease 2.35s;opacity:0}
+#lock.login-revealing .login-scanlines{transition:opacity .5s ease 2.45s;opacity:.04}
+#lock.login-finish{transition:opacity .12s linear;opacity:0;pointer-events:none}
+#lock.login-revealing.reduced{transition:opacity .65s ease;opacity:0}
+@media(prefers-reduced-motion:reduce){#lock.login-revealing .login-panel,#lock.login-revealing .login-brand,#lock.login-revealing .login-title,#lock.login-revealing .lock-user{transition:none}}
