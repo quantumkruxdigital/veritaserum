@@ -24,14 +24,14 @@ const LEGACY_POS_KEY='curios.dock.launcherPosition.v1';
 
 const apps={
  files:{name:'Files',open:files},
- media:{name:'Media',open:media},
+ media:{name:'Media',open:media,icon:'assets/apps/media.png'},
  images:{name:'Images',open:imageViewer,icon:'assets/apps/images.png'},
  videoimport:{name:'Video Importer',open:videoImporter},
  scribe:{name:'Scribe',open:()=>scribe('/Documents/untitled.scribe'),icon:'assets/apps/scribe.png'},
  sam:{name:'SAM',open:sam},
  alchemy:{name:'Alchemy',open:alchemy,icon:'assets/apps/alchemy.png'},
  photos:{name:'Photo Album',open:photoAlbum,icon:'assets/apps/photoalbum.png'},
- reelmagick:{name:'Reel-Magick',open:reelMagick},
+ reelmagick:{name:'Reel-Magick',open:reelMagick,icon:'assets/apps/reelmagick.png'},
  vault:{name:'Vault',open:vault,icon:'assets/apps/vault.png'},
  sys:{name:'Settings',open:settings,icon:'assets/apps/settings.png'}
 };

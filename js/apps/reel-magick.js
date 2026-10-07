@@ -28,8 +28,8 @@ const projectDuration=p=>Math.max(1,...p.tracks.flatMap(t=>t.clips.map(clipEnd))
 const activeAt=(p,time,type='video')=>p.tracks.filter(t=>t.type===type).flatMap(t=>t.clips).filter(c=>time>=c.start&&time<clipEnd(c)).sort((a,b)=>b.start-a.start)[0];
 
 export function reelMagick(openPath){
- if(api){if(openPath)api.open(openPath);return win('reelmagick','Reel-Magick',1120,700,()=>{})}
- return win('reelmagick','Reel-Magick',1120,700,b=>{
+ if(api){if(openPath)api.open(openPath);return win('reelmagick','Reel-Magick',1160,760,()=>{})}
+ return win('reelmagick','Reel-Magick',1160,760,b=>{
   b.classList.add('reel-magick');
   let project=fresh(),projectPath='',media=[],selected='',playhead=0,playing=false,last=0,raf=0,previewUrl='',mediaUrls=new Map(),dragClip=null;
   const mediaPane=h('aside',{className:'rmgk-media'}),preview=h('div',{className:'rmgk-preview'}),video=h('video',{playsInline:true,muted:false}),image=h('img'),empty=h('div',{className:'rmgk-preview-empty',textContent:'REEL-MAGICK'}),time=h('span',{className:'rmgk-time',textContent:'00:00.00'}),timeline=h('div',{className:'rmgk-timeline'}),status=h('div',{className:'rmgk-status',textContent:'Ready'});

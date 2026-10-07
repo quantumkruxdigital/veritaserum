@@ -2,6 +2,13 @@
 import {SB, sbAuth, sbSet} from '../kernel/supabase.js';
 import {$, h} from '../kernel/util.js';
 
+async function enterCuriOSFullscreen(){
+ try{
+  if(!document.fullscreenElement&&document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen({navigationUI:'hide'});
+ }catch{}
+}
+async function leaveCuriOSFullscreen(){try{if(document.fullscreenElement&&document.exitFullscreen)await document.exitFullscreen()}catch{}}
+
 function digitalSpace(canvas){
  const x=canvas.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
  let dots=[],raf=0,w=0,hh=0,dpr=1,mode='idle',start=0,panel=null,done=null;
@@ -22,10 +29,10 @@ function digitalSpace(canvas){
 function successful(lock,space,panel,cb){lock.classList.add('login-success');panel.querySelectorAll('input,button,.msg').forEach(e=>e.disabled=true);space.reveal(panel,()=>{lock.classList.add('login-finish');setTimeout(cb,120)})}
 export function showLogin(msg){const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg',textContent:msg||''}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'});
  let busy=false,space;const panel=h('div',{className:'vf login-panel'},h('div',{className:'login-brand',textContent:'CuriOS'}),h('div',{className:'login-title',textContent:'Sign in to your desktop'}),e,p,h('button',{className:'btn',textContent:'Sign in'}),h('button',{className:'btn',textContent:'Create account'}),m);const lock=h('div',{id:'lock'},canvas,h('div',{className:'login-scanlines','aria-hidden':'true'}),panel);
- const go=async up=>{if(busy)return;m.style.color='';m.textContent='';try{const j=await sbAuth(up?'signup':'token?grant_type=password',{email:e.value.trim(),password:p.value});if(!j.access_token){m.style.color='var(--dim)';m.textContent='Check your email to confirm the account, then sign in.';return}busy=true;sbSet(j);successful(lock,space,panel,()=>location.reload())}catch(x){m.textContent=String(x)}};panel.querySelectorAll('button')[0].onclick=()=>go(0);panel.querySelectorAll('button')[1].onclick=()=>go(1);p.onkeydown=ev=>ev.key==='Enter'&&go(0);$('#fit').append(lock);space=digitalSpace(canvas);setTimeout(()=>e.focus(),50)}
+ const go=async up=>{if(busy)return;m.style.color='';m.textContent='';enterCuriOSFullscreen();try{const j=await sbAuth(up?'signup':'token?grant_type=password',{email:e.value.trim(),password:p.value});if(!j.access_token){leaveCuriOSFullscreen();m.style.color='var(--dim)';m.textContent='Check your email to confirm the account, then sign in.';return}busy=true;sbSet(j);successful(lock,space,panel,()=>{space.stop();lock.remove();dispatchEvent(new CustomEvent('curios:authenticated'))})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x)}};panel.querySelectorAll('button')[0].onclick=()=>go(0);panel.querySelectorAll('button')[1].onclick=()=>go(1);p.onkeydown=ev=>ev.key==='Enter'&&go(0);$('#fit').append(lock);space=digitalSpace(canvas);setTimeout(()=>e.focus(),50)}
 
 export function showLock(onUnlock){
  if(document.querySelector('#lock'))return;
  const p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg'}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'}),panel=h('div',{className:'vf login-panel lock-panel'},h('div',{className:'login-brand',textContent:'CuriOS'}),h('div',{className:'login-title',textContent:'Session locked'}),SB?.email?h('div',{className:'lock-user',textContent:SB.email}):h('div',{className:'lock-user',textContent:'Local session'}),p,h('button',{className:'btn',textContent:'Unlock'}),m),lock=h('div',{id:'lock'},canvas,h('div',{className:'login-scanlines','aria-hidden':'true'}),panel);let busy=false,space;
- const unlock=async()=>{if(busy)return;m.textContent='';try{if(SB?.email){const j=await sbAuth('token?grant_type=password',{email:SB.email,password:p.value});if(!j.access_token)throw'Unable to unlock.';sbSet(j)}busy=true;successful(lock,space,panel,()=>{space.stop();lock.remove();onUnlock?.()})}catch(x){m.textContent=String(x);p.select()}};panel.querySelector('button').onclick=unlock;p.onkeydown=e=>e.key==='Enter'&&unlock();if(!SB?.email)p.style.display='none';$('#fit').append(lock);space=digitalSpace(canvas);setTimeout(()=>SB?.email?p.focus():panel.querySelector('button')?.focus(),50)
+ const unlock=async()=>{if(busy)return;m.textContent='';enterCuriOSFullscreen();try{if(SB?.email){const j=await sbAuth('token?grant_type=password',{email:SB.email,password:p.value});if(!j.access_token)throw'Unable to unlock.';sbSet(j)}busy=true;successful(lock,space,panel,()=>{space.stop();lock.remove();onUnlock?.()})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x);p.select()}};panel.querySelector('button').onclick=unlock;p.onkeydown=e=>e.key==='Enter'&&unlock();if(!SB?.email)p.style.display='none';$('#fit').append(lock);space=digitalSpace(canvas);setTimeout(()=>SB?.email?p.focus():panel.querySelector('button')?.focus(),50)
 }

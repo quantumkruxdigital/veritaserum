@@ -4,12 +4,14 @@ import {sbSave} from '../kernel/supabase.js';
 import {showLock} from './login.js';
 import {vlockNow} from '../apps/vault.js';
 
-export function lockSession(){
+export async function lockSession(){
+  try{if(document.fullscreenElement)await document.exitFullscreen()}catch{}
   vlockNow();
   document.dispatchEvent(new CustomEvent('curios:session-lock'));
   showLock(()=>document.dispatchEvent(new CustomEvent('curios:session-unlock')));
 }
-export function logoutSession(){
+export async function logoutSession(){
+  try{if(document.fullscreenElement)await document.exitFullscreen()}catch{}
   vlockNow();
   document.dispatchEvent(new CustomEvent('curios:session-logout'));
   try{localStorage.removeItem('curios.token')}catch{}

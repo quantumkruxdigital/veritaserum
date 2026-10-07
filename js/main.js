@@ -30,7 +30,7 @@ import './term/commands.js';   // registers the built-in terminal commands (side
 installFormFactor();
 applyWallpaper().catch(()=>0);
 if(location.hash.startsWith('#t=')){try{localStorage.setItem('curios.token',decodeURIComponent(location.hash.slice(3)))}catch{}history.replaceState(null,'',location.pathname)}
-(async()=>{const say=t=>act.io.say(t);
+async function boot(){const say=t=>act.io.say(t);
  const seed=async()=>{
   const dirs=['/Documents','/Music','/Pictures','/Videos','/Downloads'];
   for(const d of dirs)if(!await V.stat(d))await V.mkdir(d).catch(()=>0);
@@ -52,7 +52,9 @@ if(location.hash.startsWith('#t=')){try{localStorage.setItem('curios.token',deco
   addEventListener('curios:self-destruct',()=>{syncing=false},{once:true});
   setInterval(()=>{if(!syncing)return;const j=JSON.stringify({set,hist:H,win:layout()});if(j!==last){last=j;kvPut('desk',JSON.parse(j))}},3000);
   say(CFG.supabaseUrl?'Signed in as '+SB.email+'. Files, vault and desktop follow you to any device; npm runs in /work.':'Server mounted: your files, vault and desktop now follow you to any device.')
- }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}})();
+ }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}}
+boot();
+addEventListener('curios:authenticated',()=>boot(),{once:true});
 const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),sam:()=>sam(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),sys:()=>settings(),vault:()=>vault()};
 configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=await V.stat(p).catch(()=>null);if(st?.type=='d')files(p);else if(isReelProject(p))reelMagick(p);else if(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(p))imageViewer(p);else if(/\.(mp4|webm|ogv|mov|m4v|mkv)$/i.test(p))reelMagick(p);else if(p)files(p)}});
 // Terminal owns both Ctrl+Space and the curios:terminal-toggle event directly.
