@@ -8,9 +8,10 @@ import {V, remote} from '../kernel/vfs.js';
 import {win} from '../shell/wm.js';
 import {registerContext,pinQuick,unpinQuick,isPinned} from '../shell/context.js';
 import {alchemyFormats,convertPath} from './alchemy.js';
+import {reelMagick,isReelProject} from './reel-magick.js';
 
 const TEXT=/\.(txt|md|json|js|mjs|css|html|xml|csv|log|toml|ini|yaml|yml)$/i;
-const open=p=>(isAudio(p)||isVideo(p))?media(p):isImage(p)?imageViewer(p):TEXT.test(p)||!p.includes('.')?scribe(p):scribe(p);
+const open=p=>isReelProject(p)?reelMagick(p):isAudio(p)?media(p):isVideo(p)?reelMagick(p):isImage(p)?imageViewer(p):TEXT.test(p)||!p.includes('.')?scribe(p):scribe(p);
 const nice=n=>n<1024?n+' B':n<1048576?(n/1024).toFixed(1)+' KB':(n/1048576).toFixed(1)+' MB';
 const base=p=>p=='/'?'/':p.split('/').pop();
 const parent=p=>p=='/'?'/':res(p,'..');
@@ -101,6 +102,7 @@ export function files(start='/Documents'){const existing=document.querySelector(
   if(!selected.has(q)){selected.clear();selected.add(q);anchor=q;await renderMain()}
   const paths=selectedPaths(),many=paths.length>1,a=[];
   if(!many)a.push({label:dir?'Open '+label:'Open '+label,action:()=>dir?go(q):open(q)});
+  if(!many&&!dir&&isVideo(q))a.push({label:'Open in Reel-Magick',action:()=>reelMagick(q)});
   if(!many&&!dir){const formats=alchemyFormats(q);if(formats.length)a.push({label:'Alchemy',children:formats.map(fmt=>({label:'Convert to '+fmt.toUpperCase(),action:async()=>{try{const out=await convertPath(q,fmt);await render();alert('Alchemy created '+out)}catch(x){alert('Alchemy: '+String(x?.message||x))}}}))})}
   a.push({separator:'Clipboard'},{label:`Cut${many?' '+paths.length+' items':''}`,action:()=>setClip('cut',paths)},{label:`Copy${many?' '+paths.length+' items':''}`,action:()=>setClip('copy',paths)});
   if(dir)a.push({label:'Paste into '+label,disabled:!clipboard.paths.length,action:()=>paste(q)});

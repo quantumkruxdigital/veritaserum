@@ -4,7 +4,7 @@ import {h} from '../kernel/util.js';
 const KEY='curios.quickLaunch.v1';
 let launchApp=()=>{}, openPath=()=>{};
 const providers=new Map();
-const appNames={files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',sam:'SAM',alchemy:'Alchemy',sys:'Settings',vault:'Vault'};
+const appNames={files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',sam:'SAM',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick'};
 const appAliases={menu:null,term:null,vol:null,files:'files',vault:'vault'};
 
 function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
