@@ -35,3 +35,9 @@ document.addEventListener('contextmenu',async e=>{e.preventDefault();close();con
  rendered.push(...universal(e.target));show(e.clientX,e.clientY,rendered)
 },{capture:true});
 document.addEventListener('pointerdown',e=>{if(!e.target.closest?.('#ctx'))close()},true);addEventListener('blur',close);
+
+// Touch devices: long-press is the universal context-menu gesture.
+let lpTimer=0,lpStart=null;
+document.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||e.button!==0)return;lpStart={x:e.clientX,y:e.clientY,target:e.target};clearTimeout(lpTimer);lpTimer=setTimeout(()=>{lpTimer=0;lpStart?.target?.dispatchEvent(new MouseEvent('contextmenu',{bubbles:true,cancelable:true,clientX:lpStart.x,clientY:lpStart.y}))},520)},true);
+document.addEventListener('pointermove',e=>{if(lpStart&&Math.hypot(e.clientX-lpStart.x,e.clientY-lpStart.y)>12){clearTimeout(lpTimer);lpTimer=0;lpStart=null}},true);
+for(const ev of ['pointerup','pointercancel'])document.addEventListener(ev,()=>{clearTimeout(lpTimer);lpTimer=0;lpStart=null},true);

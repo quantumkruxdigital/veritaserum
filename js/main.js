@@ -22,8 +22,10 @@ import {layout, win, wins} from './shell/wm.js';
 import {configureContext} from './shell/context.js';
 import {H, act, setHist} from './term/terminal.js';
 import {applyWallpaper} from './kernel/wallpaper.js';
+import {installFormFactor} from './kernel/form-factor.js';
 import './term/commands.js';   // registers the built-in terminal commands (side effects only)
 
+installFormFactor();
 applyWallpaper().catch(()=>0);
 if(location.hash.startsWith('#t=')){try{localStorage.setItem('curios.token',decodeURIComponent(location.hash.slice(3)))}catch{}history.replaceState(null,'',location.pathname)}
 (async()=>{const say=t=>act.io.say(t);
@@ -54,3 +56,6 @@ configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=aw
 addEventListener('curios:terminal-toggle',()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:' ',code:'Space',ctrlKey:true,bubbles:true})));
 act.io.say('kernel ready · '+Object.keys(fs).length+' fs nodes · terminal resident (Ctrl+Space)');
 window.os={cmd,fs:{res,kids,wr,mk,rmf},win,set};
+
+// Installed CuriOS/PWA shell support.
+if('serviceWorker' in navigator&&location.protocol!=='file:')addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>0));
