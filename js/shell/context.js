@@ -4,15 +4,15 @@ import {h} from '../kernel/util.js';
 const KEY='curios.quickLaunch.v1';
 let launchApp=()=>{}, openPath=()=>{};
 const providers=new Map();
-const appNames={files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',sam:'SAM',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick',ppl:'CuriOS-Ppl'};
+const appNames={files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick',ppl:'CuriOS-Ppl'};
 const appAliases={menu:null,term:null,vol:null,files:'files',vault:'vault'};
 
-function load(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch{return[]}}
+function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(saved)?saved.filter(x=>!(x.type==='app'&&x.target==='sam')):[]}catch{return[]}}
 function save(v){localStorage.setItem(KEY,JSON.stringify(v));window.dispatchEvent(new CustomEvent('quicklaunchchange'))}
 export const quickLaunch=()=>load();
 export const configureContext=o=>{if(o.launchApp)launchApp=o.launchApp;if(o.openPath)openPath=o.openPath};
 export const registerContext=(id,fn)=>{providers.set(id,fn);return()=>providers.delete(id)};
-export function pinQuick(item){const a=load(),key=item.type+':'+item.target;if(a.some(x=>x.type+':'+x.target==key))return false;a.push(item);save(a);return true}
+export function pinQuick(item){if(item.type==='app'&&item.target==='sam')return false;const a=load(),key=item.type+':'+item.target;if(a.some(x=>x.type+':'+x.target==key))return false;a.push(item);save(a);return true}
 export function unpinQuick(item){save(load().filter(x=>x.type+':'+x.target!=item.type+':'+item.target))}
 export const isPinned=item=>load().some(x=>x.type==item.type&&x.target==item.target);
 

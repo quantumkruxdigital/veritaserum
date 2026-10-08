@@ -2,8 +2,6 @@
 import {alchemy} from '../apps/alchemy.js';
 import {files} from '../apps/files.js';
 import {scribe} from '../apps/scribe.js';
-import {sam,askSAM} from '../apps/sam.js';
-import {AIService,aiConfig} from '../kernel/ai-service.js';
 import {settings} from '../apps/settings.js';
 import {reelMagick} from '../apps/reel-magick.js';
 import {vault, vkey, vlockNow, vm} from '../apps/vault.js';
@@ -22,7 +20,7 @@ import {tick} from '../shell/dock.js';
 import {S, show, wins} from '../shell/wm.js';
 import {closePane, split, togTerm} from './terminal.js';
 
-const APPS={settings,alchemy:alchemy,reelmagick:()=>reelMagick(),files,term:()=>togTerm(true),vault,scribe:()=>scribe('/Documents/untitled.scribe'),sam:()=>sam()};
+const APPS={settings,alchemy:alchemy,reelmagick:()=>reelMagick(),files,term:()=>togTerm(true),vault,scribe:()=>scribe('/Documents/untitled.scribe')};
 cmd('help','list commands',(a,io)=>Object.entries(cmds).filter(([,c])=>!c.hidden).forEach(([n,c])=>io.say(n.padEnd(8)+c.d)));
 cmd('ls','ls [-a] [dir]  list folder',async(a,io)=>{const all=a.includes('-a'),d=a.find(x=>x!='-a');(await V.ls(res(io.cwd,d||'.'),all)).sort((x,y)=>x.type==y.type?x.name.localeCompare(y.name):x.type<y.type?-1:1).forEach(e=>io.say((e.type=='d'?'d ':'- ')+e.name+(e.type=='f'&&e.size!=null?'  '+e.size:'')))});
 cmd('cd','change folder',async(a,io)=>{const p=res(io.cwd,a[0]||'/');if((await V.stat(p))?.type!='d')throw'not a folder';io.cwd=p});
@@ -37,8 +35,6 @@ cmd('close','close window by id',a=>{const w=wins[a[0]];if(!w)throw'no such wind
 cmd('vol','vol [0-100|mute|on]',(a,io)=>{if(a[0]=='mute')set.mute=1;else if(a[0]=='on')set.mute=0;else if(a[0]!=null){set.vol=Math.max(0,Math.min(100,+a[0]||0));set.mute=0}sv();if(DEV)dev('volume','set',set.vol).then(()=>dev('volume',set.mute?'mute':'unmute')).catch(()=>0);io.say('volume '+(set.mute?'muted':set.vol))});
 cmd('win','win <id> hide|show|max|close',a=>{const w=wins[a[0]];if(!w)throw'no such window (see wins)';const b=w.e.querySelectorAll('.ct b');({hide:()=>b[0].click(),max:()=>b[1].click(),close:()=>b[2].click(),show:()=>show(a[0])})[a[1]]?.()});
 cmd('term','term --ws -v|-h  split this pane (v: side by side, h: stacked)',(a,io)=>{if(a[0]!='--ws'||!['-v','-h'].includes(a[1]))throw'usage: term --ws -v | term --ws -h';split(io.pane,a[1]=='-v'?'v':'h')});
-cmd('sam','sam [status|auto|local|cloud|models|model <name>|message]',async(a,io)=>{const op=a[0];if(!op){sam();return}if(op=='status'){const s=await AIService.status();io.say('route '+aiConfig.route+' · local '+(s.local?.available?'ready':'offline')+' · cloud '+(s.cloud?.available?'ready':'not configured'));return}if(['auto','local','cloud'].includes(op)){aiConfig.route=op;io.say('SAM route: '+op);return}if(op=='models'){const m=await AIService.models();io.say('local: '+((m.local||[]).join(', ')||'none'));io.say('cloud: '+((m.cloud||[]).join(', ')||'provider default'));return}if(op=='model'){if(!a[1])throw'usage: sam model <name>';if(aiConfig.route=='cloud')aiConfig.cloudModel=a[1];else aiConfig.localModel=a[1];io.say('SAM model: '+a[1]);return}askSAM(a.join(' '))});
-
 cmd('su','enter super-user mode',async(a,io)=>{
  if(a.length)throw'usage: su';
  if(isRoot()){io.say('already root');return}

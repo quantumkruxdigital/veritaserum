@@ -17,81 +17,12 @@ export function ppl(){
   const side=h('aside',{className:'ppl-side'}),main=h('main',{className:'ppl-main'}),status=h('div',{className:'ppl-status'});
   const btn=(t,f,c='')=>h('button',{className:'btn '+c,textContent:t,onclick:f});
   const say=(s,bad=false)=>{status.textContent=s||'';status.classList.toggle('bad',bad)};
-  async function load() {
-  try {
-    contacts = await req(
-      'ppl_contacts?' +
-      'select=contact_id,created_at,' +
-      'contact:ppl_profiles!ppl_contacts_contact_profile_fkey(id,email,display_name)' +
-      '&order=created_at.desc'
-    ) || [];
-
-    convs = await rpc('ppl_my_conversations') || [];
-
-    renderSide();
-
-    if (active) {
-      await open(active.id);
-    }
-  } catch (e) {
-    say(e.message, true);
-  }
-}
+  async function load(){try{contacts=await req('ppl_contacts?select=contact_id,created_at,contact:ppl_profiles!ppl_contacts_contact_id_fkey(id,email,display_name)&order=created_at.desc')||[];convs=await rpc('ppl_my_conversations')||[];renderSide();if(active)await open(active.id)}catch(e){say(e.message,true)}}
   function renderSide(){side.replaceChildren(h('div',{className:'ppl-brand'},h('b',{textContent:'Ppl'}),h('span',{textContent:SB?.email||''})),btn('+ Add Person',addPerson),btn('+ Group',newGroup),h('div',{className:'ppl-tabs'},h('b',{textContent:'Conversations'})),h('div',{className:'ppl-list'},...convs.map(c=>h('button',{className:'ppl-row '+(active?.id===c.id?'sel':''),onclick:()=>open(c.id)},h('span',{className:'ppl-avatar',textContent:(c.title||'?').slice(0,1).toUpperCase()}),h('span',{},h('b',{textContent:c.title||'Conversation'}),h('small',{textContent:c.last_message||'No messages yet'})),c.unread? h('i',{textContent:String(c.unread)}):''))),h('div',{className:'ppl-tabs'},h('b',{textContent:'Contacts'})),h('div',{className:'ppl-list ppl-contacts'},...contacts.map(c=>h('button',{className:'ppl-row',onclick:()=>startDirect(c.contact_id)},h('span',{className:'ppl-avatar',textContent:(c.contact?.display_name||c.contact?.email||'?')[0].toUpperCase()}),h('span',{},h('b',{textContent:c.contact?.display_name||c.contact?.email}),h('small',{textContent:c.contact?.email||''}))))));}
   async function addPerson(){const email=prompt('CuriOS account email address');if(!email)return;try{const found=await rpc('ppl_search',{query_email:email.trim()});if(!found?.length)return say('No CuriOS account found for that email.',true);const p=found[0];if(!confirm(`Add ${p.display_name||p.email} to your Contacts?`))return;await rpc('ppl_add_contact',{target_user:p.id});say('Contact added.');await load()}catch(e){say(e.message,true)}}
   async function newGroup(){if(!contacts.length)return say('Add contacts before creating a group.',true);const name=prompt('Group name');if(!name)return;const emails=prompt('Enter contact emails separated by commas:\n'+contacts.map(x=>x.contact?.email).filter(Boolean).join('\n'));if(!emails)return;const wanted=emails.split(',').map(x=>x.trim().toLowerCase()),ids=contacts.filter(x=>wanted.includes((x.contact?.email||'').toLowerCase())).map(x=>x.contact_id);if(!ids.length)return say('No matching contacts selected.',true);try{const id=await rpc('ppl_create_group',{group_name:name.trim(),member_ids:ids});await load();await open(typeof id==='string'?id:id?.id||id)}catch(e){say(e.message,true)}}
   async function startDirect(uid){try{const id=await rpc('ppl_start_direct',{target_user:uid});await load();await open(typeof id==='string'?id:id?.id||id)}catch(e){say(e.message,true)}}
-  async function open(id) {
-  try {
-    const c = convs.find(x => x.id === id) || active;
-    active = c || { id };
-
-    messages = await req(
-      'ppl_messages?' +
-      'conversation_id=eq.' + q(id) +
-      '&select=id,sender_id,body,created_at' +
-      '&order=created_at.asc' +
-      '&limit=300'
-    ) || [];
-
-    const senderIds = [
-      ...new Set(
-        messages
-          .map(m => m.sender_id)
-          .filter(Boolean)
-      )
-    ];
-
-    let profiles = [];
-
-    if (senderIds.length) {
-      profiles = await req(
-        'ppl_profiles?' +
-        'id=in.(' + senderIds.map(q).join(',') + ')' +
-        '&select=id,email,display_name'
-      ) || [];
-    }
-
-    const profileMap = new Map(
-      profiles.map(p => [p.id, p])
-    );
-
-    messages = messages.map(m => ({
-      ...m,
-      sender: profileMap.get(m.sender_id) || null
-    }));
-
-    await rpc('ppl_mark_read', {
-      conversation_id: id
-    }).catch(() => {});
-
-    renderSide();
-    renderMain();
-
-  } catch (e) {
-    say(e.message, true);
-  }
-}
+  async function open(id){try{const c=convs.find(x=>x.id===id)||active;active=c||{id};messages=await req('ppl_messages?conversation_id=eq.'+q(id)+'&select=id,sender_id,body,created_at,sender:ppl_profiles!ppl_messages_sender_id_fkey(email,display_name)&order=created_at.asc&limit=300')||[];await rpc('ppl_mark_read',{conversation_id:id}).catch(()=>0);renderSide();renderMain()}catch(e){say(e.message,true)}}
   function renderMain(){if(!active)return;const head=h('header',{className:'ppl-head'},h('div',{},h('b',{textContent:active.title||'Conversation'}),h('small',{textContent:active.kind==='group'?'Group conversation':'Private conversation'})),h('span',{className:'ppl-grow'}));if(active.kind!=='group')head.append(btn('Decline',decline,'warn'));const feed=h('section',{className:'ppl-feed'},...messages.map(m=>h('article',{className:'ppl-msg '+(m.sender_id===SB.uid?'mine':'')},h('div',{className:'ppl-msgmeta'},h('b',{textContent:m.sender_id===SB.uid?'You':(m.sender?.display_name||m.sender?.email||'CuriOS user')}),h('time',{textContent:time(m.created_at)})),h('div',{textContent:m.body}))));const input=h('textarea',{className:'ppl-compose',placeholder:'Message…',rows:2,onkeydown:e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send(input)}}});main.replaceChildren(head,feed,h('footer',{className:'ppl-composebar'},input,btn('Send',()=>send(input))));feed.scrollTop=feed.scrollHeight;}
   async function send(input){const body=input.value.trim();if(!body||!active)return;input.value='';try{await rpc('ppl_send_message',{conversation_id:active.id,message_body:body});await open(active.id)}catch(e){input.value=body;say(e.message,true)}}
   async function decline(){if(!active||active.kind==='group')return;if(!confirm('Decline this conversation? This person will be unable to message you again unless you later become mutual contacts.'))return;try{await rpc('ppl_decline_conversation',{conversation_id:active.id});active=null;main.replaceChildren(h('div',{className:'ppl-empty',textContent:'Conversation declined.'}));await load()}catch(e){say(e.message,true)}}
