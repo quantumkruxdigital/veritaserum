@@ -11,6 +11,7 @@ import {vault} from '../apps/vault.js';
 import {photoAlbum} from '../apps/photo-album.js';
 import {reelMagick} from '../apps/reel-magick.js';
 import {ppl} from '../apps/ppl.js';
+import {showWelcome} from '../apps/welcome.js';
 import {beep} from '../kernel/audio.js';
 import {dev} from '../kernel/device.js';
 import {set,sv} from '../kernel/state.js';
@@ -35,6 +36,7 @@ const apps={
  reelmagick:{name:'Reel-Magick',open:reelMagick,icon:'assets/apps/reelmagick.png'},
  ppl:{name:'CuriOS-Ppl',open:ppl,icon:'assets/apps/ppl.png'},
  vault:{name:'Vault',open:vault,icon:'assets/apps/vault.png'},
+ welcome:{name:'Welcome to CuriOS',open:()=>showWelcome()},
  sys:{name:'Settings',open:settings,icon:'assets/apps/settings.png'}
 };
 
