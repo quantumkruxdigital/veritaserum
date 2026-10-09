@@ -64,8 +64,8 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 /* Nested universal context menus */
 .ctx-item{position:relative;display:flex;align-items:center;justify-content:space-between;overflow:visible}.ctx-arrow{margin-left:22px;color:var(--dim);font-size:16px}.ctx-sub{display:none;position:absolute;left:calc(100% - 2px);top:-7px;min-width:190px;padding:6px;background:#0b1327f7;border:1px solid var(--ln);border-top-color:var(--cy);box-shadow:0 12px 30px #000b;backdrop-filter:blur(14px)}.ctx-item:hover>.ctx-sub,.ctx-item:focus-within>.ctx-sub{display:block}.ctx-sub .ctx-item{width:100%}
 
-/* CuriOS login: animated teal digital space + restrained CRT scanlines */
-#lock{overflow:hidden;background:#f7fafc}.login-space{position:absolute;inset:0;width:100%;height:100%;z-index:0}.login-scanlines{pointer-events:none;position:absolute;inset:0;z-index:1;opacity:.12;background:repeating-linear-gradient(to bottom,transparent 0,transparent 3px,#1baea40d 4px,#263b4510 5px);mix-blend-mode:multiply}.login-panel{position:relative;z-index:2;background:#06141ddd!important;border:1px solid #4de3dc55!important;box-shadow:0 24px 70px #001017cc,0 0 35px #37d8cf18;backdrop-filter:blur(18px)}.login-brand{text-align:center;color:#79fff0;font:700 25px system-ui;letter-spacing:.12em;text-shadow:0 0 18px #43e8dd66;margin-bottom:2px}.login-title{text-align:center;color:#d9fffb;font:500 13px system-ui;margin-bottom:8px}@media (prefers-reduced-motion:reduce){.login-scanlines{opacity:.09}}
+/* CuriOS login: animated teal digital space */
+#lock{overflow:hidden;background:#f7fafc}.login-space{position:absolute;inset:0;width:100%;height:100%;z-index:0}.login-panel{position:relative;z-index:2;background:#06141ddd!important;border:1px solid #4de3dc55!important;box-shadow:0 24px 70px #001017cc,0 0 35px #37d8cf18;backdrop-filter:blur(18px)}.login-brand{text-align:center;color:#79fff0;font:700 25px system-ui;letter-spacing:.12em;text-shadow:0 0 18px #43e8dd66;margin-bottom:2px}.login-title{text-align:center;color:#d9fffb;font:500 13px system-ui;margin-bottom:8px}
 
 
 /* CuriOS glass window surfaces */
@@ -107,7 +107,7 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 #lock.login-success .login-panel input,#lock.login-success .login-panel button,#lock.login-success .login-panel .msg{transition:opacity .35s ease;opacity:0;pointer-events:none}
 #lock.login-revealing .login-panel{transition:transform 3s cubic-bezier(.2,.7,.2,1),opacity .55s ease 2.45s,box-shadow 1s ease;transform:scale(.985);box-shadow:0 30px 100px #001017e8,0 0 70px #4dffe738,inset 0 1px 0 #ffffff14!important}
 #lock.login-revealing .login-brand,#lock.login-revealing .login-title,#lock.login-revealing .lock-user{transition:opacity .55s ease 2.35s;opacity:0}
-#lock.login-revealing .login-scanlines{transition:opacity .5s ease 2.45s;opacity:.04}
+
 #lock.login-finish{transition:opacity .12s linear;opacity:0;pointer-events:none}
 #lock.login-revealing.reduced{transition:opacity .65s ease;opacity:0}
 @media(prefers-reduced-motion:reduce){#lock.login-revealing .login-panel,#lock.login-revealing .login-brand,#lock.login-revealing .login-title,#lock.login-revealing .lock-user{transition:none}}
