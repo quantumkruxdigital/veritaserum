@@ -2,12 +2,13 @@ import {set,sv} from './state.js';
 import {V} from './vfs.js';
 
 export const STOCK_WALLPAPERS=[
+ {id:'symbiotic',name:'Symbiotic',url:'assets/symbiotic.png'},
  {id:'superposition',name:'Superposition',url:'assets/superposition.png'},
  {id:'curios-circuit',name:'CuriOS Circuit',url:'assets/curios-circuit.svg'}
 ];
 
 let objectUrl='';
-const FALLBACK='assets/curios-circuit.svg';
+const FALLBACK='assets/symbiotic.png';
 
 function absoluteAsset(url){
   try{return new URL(url,document.baseURI).href}catch{return url}
@@ -37,7 +38,7 @@ async function loadable(url){
   });
 }
 
-export async function applyWallpaper(choice=set.wallpaper||{type:'stock',id:'curios-circuit'}){
+export async function applyWallpaper(choice=set.wallpaper||{type:'stock',id:'symbiotic'}){
   let url=absoluteAsset(FALLBACK);
 
   if(choice?.type==='stock'){
