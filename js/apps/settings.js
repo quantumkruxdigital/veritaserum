@@ -5,6 +5,7 @@ import {DEV,V} from '../kernel/vfs.js';
 import {set} from '../kernel/state.js';
 import {STOCK_WALLPAPERS,setWallpaper} from '../kernel/wallpaper.js';
 import {win} from '../shell/wm.js';
+import {getDockPlacement,setDockPlacement} from '../shell/dock.js';
 const IMAGE=/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i;
 async function imagePaths(dir='/',out=[]){for(const e of await V.ls(dir,true).catch(()=>[])){const p=(dir==='/'?'':dir)+'/'+e.name;if(e.type==='d'){if(!p.startsWith('/.curios'))await imagePaths(p,out)}else if(IMAGE.test(p))out.push(p)}return out}
 export function settings(){win('sys','Settings',520,620,b=>{
@@ -17,7 +18,9 @@ export function settings(){win('sys','Settings',520,620,b=>{
  go=async(n,pw)=>{msg.textContent='Connecting to '+n.ssid+'…';try{const r=await dev('wifi','connect',n.ssid,...(pw?[pw]:[]));msg.textContent=r.out||'done';pwf.replaceChildren();scan()}catch(e){err(e)}},
  ask=n=>{if(!n.security||n.active)return go(n);const i=h('input',{type:'password',placeholder:n.ssid+' password',style:'flex:1',onkeydown:e=>e.key==='Enter'&&go(n,i.value)});pwf.replaceChildren(h('div',{style:'display:flex;gap:6px;margin:6px 0'},i,h('button',{className:'btn',textContent:'Connect',onclick:()=>go(n,i.value)})));i.focus()},
  pw=(label,op)=>{const x=h('button',{className:'btn',textContent:label,onclick(){if(x.a)dev('power',op).catch(err);else{x.a=1;x.textContent='Confirm: '+label}}});return x};
+ const dockPosition=h('select',{style:'width:100%;margin:7px 0 10px',onchange:e=>setDockPlacement(e.target.value)},...[['top','Top — horizontal'],['bottom','Bottom — horizontal'],['left','Left — vertical'],['right','Right — vertical'],['center','Center — floating']].map(([value,label])=>h('option',{value,textContent:label})));
+ dockPosition.value=getDockPlacement();
  const dockHelp=h('div',{style:'color:var(--dim);font-size:11px;line-height:1.45'},'Right-click empty space on the dock and choose Edit Dock to drag the launcher and pinned apps into any order. Volume and Lock / Log Out stay reserved.');
- b.append(h('div',{className:'hd',textContent:'Dock'}),dockHelp,h('div',{className:'hd',textContent:'Wallpaper'}),wall,h('button',{className:'btn',textContent:'Choose from CuriOS Files',onclick:choose}),custom,h('div',{className:'hd',textContent:'Wi-Fi'}),h('button',{className:'btn',textContent:'Scan',onclick:scan}),wl,pwf,h('div',{className:'hd',textContent:'Brightness'}),br,h('div',{className:'hd',textContent:'Battery'}),bt,h('div',{className:'hd',textContent:'Power'}),h('div',{style:'display:flex;gap:6px'},pw('Suspend','suspend'),pw('Restart','reboot'),pw('Power off','poweroff')),msg);
+ b.append(h('div',{className:'hd',textContent:'Dock'}),h('label',{textContent:'Dock position'}),dockPosition,dockHelp,h('div',{className:'hd',textContent:'Wallpaper'}),wall,h('button',{className:'btn',textContent:'Choose from CuriOS Files',onclick:choose}),custom,h('div',{className:'hd',textContent:'Wi-Fi'}),h('button',{className:'btn',textContent:'Scan',onclick:scan}),wl,pwf,h('div',{className:'hd',textContent:'Brightness'}),br,h('div',{className:'hd',textContent:'Battery'}),bt,h('div',{className:'hd',textContent:'Power'}),h('div',{style:'display:flex;gap:6px'},pw('Suspend','suspend'),pw('Restart','reboot'),pw('Power off','poweroff')),msg);
  if(!DEV){msg.textContent='Wallpaper settings work everywhere. Device controls require the bootable CuriOS server (CURIOS_DEVICE=1).';return}scan();dev('brightness','get').then(r=>r.percent&&(br.value=r.percent)).catch(()=>0);dev('battery').then(r=>bt.textContent=r.present?r.percent+'%  '+r.status:'No battery').catch(()=>0)
  })}

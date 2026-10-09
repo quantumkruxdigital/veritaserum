@@ -20,11 +20,13 @@ import {SB, SupaKV, jwt} from './kernel/supabase.js';
 import {KV, V, kvPut, setSys} from './kernel/vfs.js';
 import {tick} from './shell/dock.js';
 import {showLogin} from './shell/login.js';
+import {armFullscreenGuard} from './shell/session.js';
 import {showWelcome} from './apps/welcome.js';
 import {layout, win, wins} from './shell/wm.js';
 import {configureContext} from './shell/context.js';
 import {H, act, setHist} from './term/terminal.js';
 import {applyWallpaper} from './kernel/wallpaper.js';
+import {startPreferencesSync} from './kernel/preferences-sync.js';
 import {installFormFactor} from './kernel/form-factor.js';
 import './term/commands.js';   // registers the built-in terminal commands (side effects only)
 
@@ -46,13 +48,14 @@ async function boot(){const say=t=>act.io.say(t);
   else return say('Files live in this browser. Run  login <token>  to mount your server and keep your desktop everywhere.');
   try{const j=await(await api('/api/sys')).json();setSys({DEV:!!j.device,RUNNER:!!j&&'device' in j})}catch{}
   const d=await KV.get('desk'),v=await KV.get('vault');setSys({VC:v&&v.salt?v:null});
-  Object.assign(set,d.set||{});document.documentElement.style.setProperty('--cy',set.ac);await applyWallpaper(set.wallpaper);tick();if(Array.isArray(d.hist))setHist(d.hist);
+  Object.assign(set,d.set||{});document.documentElement.style.setProperty('--cy',set.ac);await applyWallpaper(set.wallpaper);await startPreferencesSync();tick();if(Array.isArray(d.hist))setHist(d.hist);
   const ops={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),ppl:()=>ppl(),welcome:()=>showWelcome(),vault:()=>vault(),sys:()=>settings()};
   for(const w of d.win||[]){const f=w.id.startsWith('scribe:')?()=>scribe(w.id.slice(7)):ops[w.id];if(!f)continue;f();const x=wins[w.id];if(!x)continue;Object.assign(x.e.style,{left:w.l,top:w.t,width:w.w,height:w.h});x.e.mx=w.mx||0;if(w.hide)x.e.style.display='none'}
   let last=JSON.stringify({set,hist:H,win:layout()}),syncing=true;
   addEventListener('curios:self-destruct',()=>{syncing=false},{once:true});
   setInterval(()=>{if(!syncing)return;const j=JSON.stringify({set,hist:H,win:layout()});if(j!==last){last=j;kvPut('desk',JSON.parse(j))}},3000);
   if(!sessionStorage.getItem('curios.welcome.seenThisSession')){sessionStorage.setItem('curios.welcome.seenThisSession','1');setTimeout(()=>showWelcome({automatic:true}),180)}
+  armFullscreenGuard();
   say(CFG.supabaseUrl?'Signed in as '+SB.email+'. Files, vault and desktop follow you to any device; npm runs in /work.':'Server mounted: your files, vault and desktop now follow you to any device.')
  }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}}
 boot();

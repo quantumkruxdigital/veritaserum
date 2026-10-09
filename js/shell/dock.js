@@ -22,6 +22,22 @@ import {lockSession,logoutSession} from './session.js';
 const PIN_KEY='curios.dock.pins.v1';
 const ORDER_KEY='curios.dock.order.v1';
 const LEGACY_POS_KEY='curios.dock.launcherPosition.v1';
+const PLACEMENT_KEY='curios.dock.placement.v1';
+const PLACEMENTS=['top','bottom','left','right','center'];
+export function getDockPlacement(){
+ const saved=localStorage.getItem(PLACEMENT_KEY)||'top';
+ return PLACEMENTS.includes(saved)?saved:'top';
+}
+export function setDockPlacement(position){
+ if(!PLACEMENTS.includes(position))return;
+ localStorage.setItem(PLACEMENT_KEY,position);
+ applyDockPlacement();
+}
+function applyDockPlacement(){
+ const dock=document.getElementById('dock');if(!dock)return;
+ dock.dataset.placement=getDockPlacement();
+}
+
 
 const apps={
  files:{name:'Files',open:files,icon:'assets/apps/files.png'},
@@ -129,6 +145,7 @@ function menuButton(){
 export function renderDock(){
  const left=$('#dock-left'),right=$('#dock-right'),dock=$('#dock');
  if(!left||!right||!dock)return;
+ applyDockPlacement();
  dock.classList.toggle('dock-editing',editMode);
  left.replaceChildren(...order().map(id=>id==='menu'?menuButton():iconButton(id)));
  const vol=h('button',{dataset:{a:'vol'},title:'Volume'}),session=h('button',{dataset:{a:'session'},title:'Lock / Log Out'});
