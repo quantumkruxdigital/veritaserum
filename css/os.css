@@ -136,3 +136,8 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 /* CuriOS first-login welcome */
 .curios-welcome{box-sizing:border-box;display:flex;flex-direction:column;gap:14px;padding:23px;overflow:auto;color:#eafcff;background:linear-gradient(145deg,rgba(9,52,64,.97),rgba(7,29,43,.97));height:100%;font-family:inherit}
 .cw-header{display:flex;align-items:center;gap:18px}.cw-mark{width:66px;height:66px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(135deg,#30f0c2,#007ca7);color:#07343c;font-size:42px;font-weight:800;box-shadow:0 8px 26px #0007}.cw-header h2{font-size:24px;margin:0}.cw-header p{margin:4px 0 0;color:#b8e5e9}.cw-intro{line-height:1.55;margin:0}.cw-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cw-item{padding:12px;border:1px solid #82f8e02d;border-radius:12px;background:#ffffff0a}.cw-item strong{font-size:14px}.cw-item p{font-size:12px;line-height:1.5;color:#c0dce2;margin:6px 0 0}.cw-footer{margin-top:auto;display:flex;justify-content:space-between;align-items:center;gap:12px}.cw-footer label{font-size:12px;display:flex;align-items:center;gap:7px}.cw-footer input{accent-color:#25d9b2}@media(max-width:680px){.cw-grid{grid-template-columns:1fr}.cw-footer{flex-wrap:wrap}}
+
+/* Spatial white login chamber: floating card over the canvas-rendered room. */
+#lock .login-panel{box-shadow:0 42px 110px #0c253a9c,0 14px 36px #091d2a70,0 0 60px #3ddfc521,inset 0 1px 0 #ffffff22!important;transform:translateZ(0)}
+#lock .login-space{background:#f5f8fa}
+@media(prefers-reduced-motion:reduce){#lock .login-panel{transition:none!important}}

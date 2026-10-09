@@ -11,7 +11,9 @@ async function leaveCuriOSFullscreen(){try{if(document.fullscreenElement&&docume
 
 function digitalSpace(canvas){
  const x=canvas.getContext('2d'),reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
- let dots=[],raf=0,w=0,hh=0,dpr=1,mode='idle',start=0,panel=null,done=null;
+ let dots=[],raf=0,w=0,hh=0,dpr=1,mode='idle',start=0,panel=null,done=null,mouseX=0,mouseY=0;
+ const move=e=>{if(reduce)return;mouseX=(e.clientX/Math.max(innerWidth,1)-.5)*2;mouseY=(e.clientY/Math.max(innerHeight,1)-.5)*2};
+ addEventListener('pointermove',move,{passive:true});
  const resize=()=>{const r=canvas.getBoundingClientRect();dpr=Math.min(devicePixelRatio||1,2);w=Math.max(1,r.width);hh=Math.max(1,r.height);canvas.width=w*dpr;canvas.height=hh*dpr;x.setTransform(dpr,0,0,dpr,0,0);const count=Math.max(70,Math.min(180,Math.round(w*hh/9000)));dots=Array.from({length:count},(_,i)=>({x:Math.random()*w,y:Math.random()*hh,ox:0,oy:0,z:.25+Math.random()*.9,v:.05+Math.random()*.18,s:.7+Math.random()*1.8,i}))};
  const target=(d,r)=>{const pr=panel?.getBoundingClientRect(),cr=canvas.getBoundingClientRect();const cx=(pr?pr.left+pr.width/2:cr.left+w/2)-cr.left,cy=(pr?pr.top+pr.height/2:cr.top+hh/2)-cr.top;const rx=(pr?pr.width*.67:Math.min(w,hh)*.24),ry=(pr?pr.height*.72:Math.min(w,hh)*.3);const gap=.72;const a=gap+(Math.PI*2-gap*2)*(d.i/Math.max(1,dots.length-1));return{x:cx+Math.cos(a)*rx,y:cy+Math.sin(a)*ry}}
  const ease=v=>1-Math.pow(1-Math.max(0,Math.min(1,v)),3);
@@ -21,21 +23,41 @@ function digitalSpace(canvas){
   const g=x.createRadialGradient(w*.47,hh*.36,0,w*.5,hh*.48,Math.max(w,hh)*.82);
   g.addColorStop(0,'#ffffff');g.addColorStop(.48,'#fbfdff');g.addColorStop(.78,'#f0f4f7');g.addColorStop(1,'#d9e0e5');x.fillStyle=g;x.fillRect(0,0,w,hh);
   const depth=x.createRadialGradient(w*.5,hh*.5,Math.min(w,hh)*.18,w*.5,hh*.5,Math.max(w,hh)*.72);depth.addColorStop(0,'rgba(255,255,255,0)');depth.addColorStop(.72,'rgba(80,105,118,.025)');depth.addColorStop(1,'rgba(25,42,52,.12)');x.fillStyle=depth;x.fillRect(0,0,w,hh);
+  // Perspective chamber: luminous rear wall, recessed ceiling, sidewalls and floor.
+  // Parallax is gentle and the entire scene is rendered in the existing canvas.
+  const px=reduce?0:mouseX*14,py=reduce?0:mouseY*9;
+  const backX=w*.5-px*.65,backY=hh*.49-py*.65;
+  x.save();
+  const rearW=Math.min(w*.73,1100),rearH=Math.min(hh*.65,760);
+  const L=backX-rearW/2,R=backX+rearW/2,T=backY-rearH/2,B=backY+rearH/2;
+  const polygon=(points,colors)=>{const gg=x.createLinearGradient(0,0,0,hh);colors.forEach(([at,c])=>gg.addColorStop(at,c));x.fillStyle=gg;x.beginPath();points.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.closePath();x.fill()};
+  polygon([[0,0],[w,0],[R,T],[L,T]],[[0,'#c3ccd3'],[.45,'#f0f3f5'],[1,'#fafcfd']]);
+  polygon([[0,0],[L,T],[L,B],[0,hh]],[[0,'#b7c4cb'],[.5,'#e9eff2'],[1,'#cad5db']]);
+  polygon([[w,0],[R,T],[R,B],[w,hh]],[[0,'#b9c5cb'],[.5,'#eaf0f2'],[1,'#cbd5da']]);
+  polygon([[0,hh],[L,B],[R,B],[w,hh]],[[0,'#ffffff'],[.6,'#edf2f4'],[1,'#b4c0c8']]);
+  const wall=x.createRadialGradient(backX,backY-rearH*.18,8,backX,backY,rearW*.74);
+  wall.addColorStop(0,'#ffffff');wall.addColorStop(.7,'#fbfdff');wall.addColorStop(1,'#e1e9ed');
+  x.fillStyle=wall;x.fillRect(L,T,rearW,rearH);
+  x.strokeStyle='rgba(52,72,84,.14)';x.lineWidth=1.5;x.strokeRect(L,T,rearW,rearH);
+  const recess=x.createRadialGradient(backX,backY,Math.min(rearW,rearH)*.24,backX,backY,Math.max(w,hh)*.78);
+  recess.addColorStop(0,'rgba(255,255,255,0)');recess.addColorStop(.75,'rgba(34,53,64,.02)');recess.addColorStop(1,'rgba(16,34,44,.26)');x.fillStyle=recess;x.fillRect(0,0,w,hh);
+  x.restore();
   const elapsed=mode==='idle'?0:t-start;
   for(const d of dots){
    if(mode==='idle'&&!reduce){d.y-=d.v*d.z*(1+Math.sin(t*.00025+d.x)*.25);d.x+=Math.sin(t*.00018+d.y*.01)*.035*d.z;if(d.y<-8){d.y=hh+8;d.x=Math.random()*w}}
    else if(mode==='reveal'&&!reduce){const q=target(d);let k=ease((elapsed-350)/1450);if(elapsed<350){const pr=panel?.getBoundingClientRect(),cr=canvas.getBoundingClientRect();const cx=(pr?pr.left+pr.width/2:cr.left+w/2)-cr.left,cy=(pr?pr.top+pr.height/2:cr.top+hh/2)-cr.top;const a=Math.atan2(d.y-cy,d.x-cx)+elapsed*.004;const rr=Math.hypot(d.x-cx,d.y-cy)*(1-elapsed/350*.18);d.x=cx+Math.cos(a)*rr;d.y=cy+Math.sin(a)*rr}else{d.x=d.ox+(q.x-d.ox)*k;d.y=d.oy+(q.y-d.oy)*k}}
-   const pulse=.68+.3*Math.sin(t*.0014+d.x),r=d.s*d.z*(mode==='reveal'&&elapsed>1500?1.35:1),a=Math.max(.26,pulse*d.z);
+   const pulse=.72+.25*Math.sin(t*.0014+d.x),r=d.s*(.45+d.z*.85)*(mode==='reveal'&&elapsed>1500?1.35:1),a=Math.max(.45,pulse*(.6+d.z*.4));
+   const dx=d.x+(reduce?0:mouseX*(1.1-d.z)*12),dy=d.y+(reduce?0:mouseY*(1.1-d.z)*8);
    // High-contrast depth pass: a dense black/charcoal shadow slightly below the
    // particle makes the existing cyan/green palette read crisply on white.
-   x.globalAlpha=Math.min(.82,a*.9);x.fillStyle='#071116';x.shadowColor='rgba(0,0,0,.72)';x.shadowBlur=6+5*d.z;x.beginPath();x.arc(d.x+1.6*d.z,d.y+2.2*d.z,r*1.18,0,Math.PI*2);x.fill();
+   x.globalAlpha=Math.min(.98,a*1.08);x.fillStyle='#03090e';x.shadowColor='rgba(0,0,0,.94)';x.shadowBlur=7+6*d.z;x.beginPath();x.arc(dx+1.7*d.z,dy+2.4*d.z,r*1.28,0,Math.PI*2);x.fill();
    // Luminous colour pass. Preserve the CuriOS teal/cyan family, but increase
    // saturation and core brightness for the new white environment.
-   x.globalAlpha=a;x.fillStyle=d.z>.72?'#42ffd7':d.z>.48?'#00dbe8':'#00a9d6';x.shadowColor=d.z>.65?'#00f6cf':'#00bde8';x.shadowBlur=mode==='reveal'&&elapsed>1500?13:5;x.beginPath();x.arc(d.x,d.y,r,0,Math.PI*2);x.fill();x.globalAlpha=Math.min(1,a+.18);x.fillStyle='#dffff8';x.shadowBlur=0;x.beginPath();x.arc(d.x-r*.22,d.y-r*.25,Math.max(.38,r*.28),0,Math.PI*2);x.fill();x.shadowBlur=0
+   x.globalAlpha=a;x.fillStyle=d.z>.72?'#00e9ac':d.z>.48?'#00c8d9':'#0879b5';x.shadowColor=d.z>.65?'#00dcb0':'#008bad';x.shadowBlur=mode==='reveal'&&elapsed>1500?12:4;x.beginPath();x.arc(dx,dy,r,0,Math.PI*2);x.fill();x.globalAlpha=Math.min(1,a+.12);x.fillStyle='#e4fff8';x.shadowBlur=0;x.beginPath();x.arc(dx-r*.22,dy-r*.25,Math.max(.38,r*.24),0,Math.PI*2);x.fill();x.shadowBlur=0
   }x.globalAlpha=1;
   if(mode==='reveal'&&elapsed>=3000){mode='done';const cb=done;done=null;cb?.();return}raf=requestAnimationFrame(draw)};
  resize();addEventListener('resize',resize,{passive:true});draw(0);
- return{reveal(p,cb){panel=p;done=cb;if(reduce){canvas.closest('#lock')?.classList.add('login-revealing','reduced');setTimeout(()=>cb?.(),650);return}for(const d of dots){d.ox=d.x;d.oy=d.y}mode='reveal';start=performance.now();canvas.closest('#lock')?.classList.add('login-revealing')},stop(){cancelAnimationFrame(raf)}}
+ return{reveal(p,cb){panel=p;done=cb;if(reduce){canvas.closest('#lock')?.classList.add('login-revealing','reduced');setTimeout(()=>cb?.(),650);return}for(const d of dots){d.ox=d.x;d.oy=d.y}mode='reveal';start=performance.now();canvas.closest('#lock')?.classList.add('login-revealing')},stop(){cancelAnimationFrame(raf);removeEventListener('resize',resize);removeEventListener('pointermove',move)}}
 }
 function successful(lock,space,panel,cb){lock.classList.add('login-success');panel.querySelectorAll('input,button,.msg').forEach(e=>e.disabled=true);space.reveal(panel,()=>{lock.classList.add('login-finish');setTimeout(cb,120)})}
 export function showLogin(msg){const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg',textContent:msg||''}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'});
