@@ -23,25 +23,20 @@ function digitalSpace(canvas){
   const g=x.createRadialGradient(w*.47,hh*.36,0,w*.5,hh*.48,Math.max(w,hh)*.82);
   g.addColorStop(0,'#ffffff');g.addColorStop(.48,'#fbfdff');g.addColorStop(.78,'#f0f4f7');g.addColorStop(1,'#d9e0e5');x.fillStyle=g;x.fillRect(0,0,w,hh);
   const depth=x.createRadialGradient(w*.5,hh*.5,Math.min(w,hh)*.18,w*.5,hh*.5,Math.max(w,hh)*.72);depth.addColorStop(0,'rgba(255,255,255,0)');depth.addColorStop(.72,'rgba(80,105,118,.025)');depth.addColorStop(1,'rgba(25,42,52,.12)');x.fillStyle=depth;x.fillRect(0,0,w,hh);
-  // Perspective chamber: luminous rear wall, recessed ceiling, sidewalls and floor.
-  // Parallax is gentle and the entire scene is rendered in the existing canvas.
-  const px=reduce?0:mouseX*14,py=reduce?0:mouseY*9;
-  const backX=w*.5-px*.65,backY=hh*.49-py*.65;
-  x.save();
-  const rearW=Math.min(w*.73,1100),rearH=Math.min(hh*.65,760);
-  const L=backX-rearW/2,R=backX+rearW/2,T=backY-rearH/2,B=backY+rearH/2;
-  const polygon=(points,colors)=>{const gg=x.createLinearGradient(0,0,0,hh);colors.forEach(([at,c])=>gg.addColorStop(at,c));x.fillStyle=gg;x.beginPath();points.forEach(([a,b],i)=>i?x.lineTo(a,b):x.moveTo(a,b));x.closePath();x.fill()};
-  polygon([[0,0],[w,0],[R,T],[L,T]],[[0,'#c3ccd3'],[.45,'#f0f3f5'],[1,'#fafcfd']]);
-  polygon([[0,0],[L,T],[L,B],[0,hh]],[[0,'#b7c4cb'],[.5,'#e9eff2'],[1,'#cad5db']]);
-  polygon([[w,0],[R,T],[R,B],[w,hh]],[[0,'#b9c5cb'],[.5,'#eaf0f2'],[1,'#cbd5da']]);
-  polygon([[0,hh],[L,B],[R,B],[w,hh]],[[0,'#ffffff'],[.6,'#edf2f4'],[1,'#b4c0c8']]);
-  const wall=x.createRadialGradient(backX,backY-rearH*.18,8,backX,backY,rearW*.74);
-  wall.addColorStop(0,'#ffffff');wall.addColorStop(.7,'#fbfdff');wall.addColorStop(1,'#e1e9ed');
-  x.fillStyle=wall;x.fillRect(L,T,rearW,rearH);
-  x.strokeStyle='rgba(52,72,84,.14)';x.lineWidth=1.5;x.strokeRect(L,T,rearW,rearH);
-  const recess=x.createRadialGradient(backX,backY,Math.min(rearW,rearH)*.24,backX,backY,Math.max(w,hh)*.78);
-  recess.addColorStop(0,'rgba(255,255,255,0)');recess.addColorStop(.75,'rgba(34,53,64,.02)');recess.addColorStop(1,'rgba(16,34,44,.26)');x.fillStyle=recess;x.fillRect(0,0,w,hh);
-  x.restore();
+  // Implied spatial depth only: no walls, corners, horizon or hard edges.
+  // Broad feathered shadows shift slightly with pointer movement.
+  const px=reduce?0:mouseX*10,py=reduce?0:mouseY*7;
+  const softGlow=x.createRadialGradient(w*.49-px,hh*.42-py,Math.min(w,hh)*.09,w*.49-px,hh*.42-py,Math.max(w,hh)*.64);
+  softGlow.addColorStop(0,'rgba(255,255,255,.56)');
+  softGlow.addColorStop(.56,'rgba(255,255,255,.14)');
+  softGlow.addColorStop(1,'rgba(255,255,255,0)');
+  x.fillStyle=softGlow;x.fillRect(0,0,w,hh);
+  const ambient=x.createRadialGradient(w*.5+px*.5,hh*.48+py*.5,Math.min(w,hh)*.3,w*.5+px*.5,hh*.48+py*.5,Math.max(w,hh)*.79);
+  ambient.addColorStop(0,'rgba(22,40,53,0)');
+  ambient.addColorStop(.65,'rgba(22,40,53,.008)');
+  ambient.addColorStop(.88,'rgba(22,40,53,.042)');
+  ambient.addColorStop(1,'rgba(12,29,42,.09)');
+  x.fillStyle=ambient;x.fillRect(0,0,w,hh);
   const elapsed=mode==='idle'?0:t-start;
   for(const d of dots){
    if(mode==='idle'&&!reduce){d.y-=d.v*d.z*(1+Math.sin(t*.00025+d.x)*.25);d.x+=Math.sin(t*.00018+d.y*.01)*.035*d.z;if(d.y<-8){d.y=hh+8;d.x=Math.random()*w}}
