@@ -205,13 +205,49 @@ const carouselGroups={
  'System':['vault','sys']
 };
 let carouselOpen=false,carouselGroup='All Apps',carouselSelection=0,carouselQuery='';
+// A single rotation state survives category changes and carousel redraws.
+let carouselAngle=0,carouselVelocity=0,carouselDragging=false,carouselPointer=null,carouselLastX=0,carouselLastTime=0,carouselFrame=0,carouselFrameTime=0;
+function animateCarousel(time){
+ const dt=Math.min(48,time-(carouselFrameTime||time));carouselFrameTime=time;
+ if(carouselOpen){
+  if(!carouselDragging){
+   carouselAngle+=(carouselVelocity||0)*dt;
+   carouselVelocity*=Math.pow(.94,dt/16);
+   if(Math.abs(carouselVelocity)<.003){carouselVelocity=0;carouselAngle+=360*dt/68000}
+  }
+  const orbit=carouselRoot.querySelector('.curios-carousel-orbit');
+  if(orbit)orbit.style.transform=`rotateY(${carouselAngle}deg)`;
+  carouselFrame=requestAnimationFrame(animateCarousel);
+ }
+}
+function bindCarouselDrag(stage){
+ stage.addEventListener('pointerdown',e=>{
+  // App cards remain clickable; empty gaps act as a grab handle.
+  if(e.button!==0||e.target.closest('.curios-carousel-item'))return;
+  carouselDragging=true;carouselPointer=e.pointerId;carouselLastX=e.clientX;carouselLastTime=performance.now();carouselVelocity=0;
+  stage.setPointerCapture(e.pointerId);stage.classList.add('grabbing');e.preventDefault();
+ });
+ stage.addEventListener('pointermove',e=>{
+  if(!carouselDragging||e.pointerId!==carouselPointer)return;
+  const now=performance.now(),dx=e.clientX-carouselLastX,dt=Math.max(8,now-carouselLastTime);
+  carouselAngle+=dx*.38;carouselVelocity=Math.max(-.65,Math.min(.65,dx*.38/dt));
+  carouselLastX=e.clientX;carouselLastTime=now;e.preventDefault();
+ });
+ const release=e=>{
+  if(!carouselDragging||e.pointerId!==carouselPointer)return;
+  carouselDragging=false;carouselPointer=null;stage.classList.remove('grabbing');
+  if(stage.hasPointerCapture(e.pointerId))stage.releasePointerCapture(e.pointerId);
+ };
+ stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);
+}
+
 const carouselRoot=h('div',{className:'curios-carousel-overlay',role:'dialog','aria-label':'CuriOS application launcher','aria-modal':'true'});
 carouselRoot.hidden=true;
 $('#fit').append(carouselRoot);
 const carouselIds=()=>carouselGroups[carouselGroup].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
 function closeCarousel(){
  if(!carouselOpen)return;
- carouselOpen=false;carouselRoot.classList.remove('active');carouselRoot.hidden=true;
+ carouselOpen=false;carouselDragging=false;carouselPointer=null;cancelAnimationFrame(carouselFrame);carouselFrameTime=0;carouselRoot.classList.remove('active');carouselRoot.hidden=true;
 }
 function launchCarouselApp(id){closeCarousel();apps[id]?.open()}
 function drawCarousel(){
@@ -219,12 +255,12 @@ function drawCarousel(){
  const backdrop=h('div',{className:'curios-carousel-backdrop',onclick:closeCarousel});
  const shell=h('section',{className:'curios-carousel-shell'});
  const head=h('header',{className:'curios-carousel-header'},
-  h('div',{},h('span',{className:'curios-carousel-kicker',textContent:'CuriOS / APPLICATIONS'}),h('h2',{textContent:'Your universe'})),
+  h('div',{},h('span',{className:'curios-carousel-kicker',textContent:'CuriOS / APPLICATIONS'})),
   h('button',{className:'curios-carousel-close',textContent:'×',title:'Close launcher',onclick:closeCarousel}));
  const search=h('input',{className:'curios-carousel-search',type:'search',placeholder:'Find an application…',value:carouselQuery,'aria-label':'Search applications',oninput(){carouselQuery=search.value;carouselSelection=0;drawCarousel();const el=carouselRoot.querySelector('.curios-carousel-search');el?.focus();el?.setSelectionRange(carouselQuery.length,carouselQuery.length)}});
  const tabs=h('nav',{className:'curios-carousel-tabs','aria-label':'Application groups'},...Object.keys(carouselGroups).map(group=>h('button',{className:group===carouselGroup?'selected':'',textContent:group,onclick(){carouselGroup=group;carouselSelection=0;drawCarousel()}})));
  const stage=h('div',{className:'curios-carousel-stage'});
- const orbit=h('div',{className:'curios-carousel-orbit'});
+ const orbit=h('div',{className:'curios-carousel-orbit'});bindCarouselDrag(stage);
  if(ids.length){
   const radius=ids.length<=3?160:Math.min(290,190+ids.length*9);
   ids.forEach((id,index)=>{
@@ -240,14 +276,14 @@ function drawCarousel(){
   h('button',{textContent:'←',title:'Previous app',onclick(){carouselSelection=(carouselSelection-1+ids.length)%ids.length;drawCarousel()}}),
   h('span',{textContent:selected?apps[selected].name:'No results'}),
   h('button',{textContent:'→',title:'Next app',onclick(){carouselSelection=(carouselSelection+1)%ids.length;drawCarousel()}}),
-  h('small',{textContent:'Click an icon to open · Right-click to pin/unpin · Esc to close'}));
+  h('small',{textContent:'Drag or flick between apps to spin · Click to open · Right-click to pin'}));
  shell.append(head,search,tabs,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
 }
 function toggleCarousel(){
  if(carouselOpen){closeCarousel();return}
  if(document.querySelector('#lock'))return;
  closePop();carouselOpen=true;carouselQuery='';carouselGroup='All Apps';carouselSelection=0;
- carouselRoot.hidden=false;drawCarousel();requestAnimationFrame(()=>carouselRoot.classList.add('active'));
+ carouselRoot.hidden=false;drawCarousel();carouselFrameTime=0;carouselFrame=requestAnimationFrame(animateCarousel);requestAnimationFrame(()=>carouselRoot.classList.add('active'));
 }
 document.addEventListener('keydown',e=>{
  if(!carouselOpen)return;
