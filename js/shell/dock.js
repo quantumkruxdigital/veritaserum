@@ -23,10 +23,10 @@ const PIN_KEY='curios.dock.pins.v1';
 const ORDER_KEY='curios.dock.order.v1';
 const LEGACY_POS_KEY='curios.dock.launcherPosition.v1';
 const PLACEMENT_KEY='curios.dock.placement.v1';
-const PLACEMENTS=['top','bottom','left','right','center'];
+const PLACEMENTS=['top','bottom','right'];
 export function getDockPlacement(){
- const saved=localStorage.getItem(PLACEMENT_KEY)||'top';
- return PLACEMENTS.includes(saved)?saved:'top';
+ const saved=localStorage.getItem(PLACEMENT_KEY)||'right';
+ return PLACEMENTS.includes(saved)?saved:'right';
 }
 export function setDockPlacement(position){
  if(!PLACEMENTS.includes(position))return;
@@ -35,7 +35,20 @@ export function setDockPlacement(position){
 }
 function applyDockPlacement(){
  const dock=document.getElementById('dock');if(!dock)return;
- dock.dataset.placement=getDockPlacement();
+ const placement=getDockPlacement();
+ dock.dataset.placement=placement;
+ document.getElementById('fit')?.classList.toggle('dock-right-default-layout',placement==='right');
+ const clock=document.getElementById('clk');
+ const fit=document.getElementById('fit');
+ if(clock&&fit){
+  if(placement==='right'){
+   if(clock.parentElement!==fit)fit.appendChild(clock);
+   clock.classList.add('desktop-clock');
+  }else{
+   if(clock.parentElement!==dock)dock.insertBefore(clock,document.getElementById('dock-right'));
+   clock.classList.remove('desktop-clock');
+  }
+ }
 }
 
 

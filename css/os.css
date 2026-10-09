@@ -221,3 +221,11 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 #lock.login-finish{transition:opacity .65s cubic-bezier(.22,1,.36,1)!important;opacity:0;pointer-events:none}
 #lock.login-revealing.reduced{transition:opacity .5s ease}
 @media(prefers-reduced-motion:reduce){.win,.win.curios-window-reenter{animation:none}.curios-carousel-overlay,.curios-carousel-shell,#lock.login-finish{transition:none!important}}
+
+/* CuriOS dock: supported positions Top, Bottom, Right only. */
+#dock[data-placement="right"]{right:18px;left:auto}
+#fit>#clk.desktop-clock{position:absolute;top:30px;right:30px;left:auto;bottom:auto;z-index:8990;display:block;min-width:0;width:auto;height:auto;padding:0;margin:0;transform:none;writing-mode:horizontal-tb;white-space:nowrap;font:600 29px ui-monospace,Consolas,monospace;line-height:1.25;color:#fff;text-shadow:0 2px 8px #000d;pointer-events:none}
+
+/* Keep the orbital launcher visually balanced against the right-side dock. */
+#fit.dock-right-default-layout .curios-carousel-shell{margin-left:-64px}
+@media(max-width:700px){#fit.dock-right-default-layout .curios-carousel-shell{margin-left:-24px}}
