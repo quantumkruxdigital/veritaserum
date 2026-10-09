@@ -3,7 +3,7 @@ import {$, h} from '../kernel/util.js';
 import {formFactor} from '../kernel/form-factor.js';
 
 export let S=1;
-const fit=()=>{const mobile=formFactor().mode!='desktop';S=mobile?1:Math.max(innerWidth/1280,innerHeight/800);const f=$('#fit');if(mobile){f.style.transform='none';f.style.left='0';f.style.top='0';f.style.width='100vw';f.style.height='100dvh'}else{f.style.left='50%';f.style.top='50%';f.style.width='1280px';f.style.height='800px';f.style.transform=`translate(${-640*S}px,${-400*S}px) scale(${S})`}};
+const fit=()=>{const mobile=formFactor().mode!='desktop';S=mobile?1:Math.max(innerWidth/1280,innerHeight/800);const f=$('#fit');if(mobile){f.style.transform='none';f.style.left='0';f.style.top='0';f.style.width='100vw';f.style.height='100dvh'}else{f.style.left='50%';f.style.top='50%';f.style.width='1280px';f.style.height='800px';f.style.transformOrigin='center center';f.style.transform=`translate(-50%, -50%) scale(${S})`}};
 fit();
 addEventListener('resize',fit);
 export const wins={};
