@@ -197,14 +197,77 @@ function appEntry(id){
  return b;
 }
 
+// Spatial app launcher: a keyboard-accessible, gently orbiting carousel.
+const carouselGroups={
+ 'All Apps':Object.keys(apps).filter(id=>id!=='welcome'),
+ 'Create':['images','scribe','alchemy','reelmagick','photos'],
+ 'Explore':['files','media','videoimport','ppl'],
+ 'System':['vault','sys']
+};
+let carouselOpen=false,carouselGroup='All Apps',carouselSelection=0,carouselQuery='';
+const carouselRoot=h('div',{className:'curios-carousel-overlay',role:'dialog','aria-label':'CuriOS application launcher','aria-modal':'true'});
+carouselRoot.hidden=true;
+$('#fit').append(carouselRoot);
+const carouselIds=()=>carouselGroups[carouselGroup].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
+function closeCarousel(){
+ if(!carouselOpen)return;
+ carouselOpen=false;carouselRoot.classList.remove('active');carouselRoot.hidden=true;
+}
+function launchCarouselApp(id){closeCarousel();apps[id]?.open()}
+function drawCarousel(){
+ const ids=carouselIds();if(carouselSelection>=ids.length)carouselSelection=0;
+ const backdrop=h('div',{className:'curios-carousel-backdrop',onclick:closeCarousel});
+ const shell=h('section',{className:'curios-carousel-shell'});
+ const head=h('header',{className:'curios-carousel-header'},
+  h('div',{},h('span',{className:'curios-carousel-kicker',textContent:'CuriOS / APPLICATIONS'}),h('h2',{textContent:'Your universe'})),
+  h('button',{className:'curios-carousel-close',textContent:'×',title:'Close launcher',onclick:closeCarousel}));
+ const search=h('input',{className:'curios-carousel-search',type:'search',placeholder:'Find an application…',value:carouselQuery,'aria-label':'Search applications',oninput(){carouselQuery=search.value;carouselSelection=0;drawCarousel();const el=carouselRoot.querySelector('.curios-carousel-search');el?.focus();el?.setSelectionRange(carouselQuery.length,carouselQuery.length)}});
+ const tabs=h('nav',{className:'curios-carousel-tabs','aria-label':'Application groups'},...Object.keys(carouselGroups).map(group=>h('button',{className:group===carouselGroup?'selected':'',textContent:group,onclick(){carouselGroup=group;carouselSelection=0;drawCarousel()}})));
+ const stage=h('div',{className:'curios-carousel-stage'});
+ const orbit=h('div',{className:'curios-carousel-orbit'});
+ if(ids.length){
+  const radius=ids.length<=3?160:Math.min(290,190+ids.length*9);
+  ids.forEach((id,index)=>{
+   const a=apps[id],angle=360*index/ids.length;
+   const item=h('button',{className:'curios-carousel-item'+(index===carouselSelection?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px;--counter:${-angle}deg`,title:a.name,'aria-label':'Open '+a.name,onclick(){launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();if(id==='sys')return;toggleDockPin(id);drawCarousel()}});
+   if(a.icon)item.append(h('img',{src:a.icon,alt:''}));else item.append(h('span',{textContent:a.name.slice(0,1)}));
+   item.append(h('span',{className:'curios-carousel-item-label',textContent:a.name}));orbit.append(item);
+  });
+ }else stage.append(h('p',{className:'curios-carousel-empty',textContent:'No matching applications'}));
+ stage.append(orbit);
+ const selected=ids[carouselSelection];
+ const foot=h('footer',{className:'curios-carousel-footer'},
+  h('button',{textContent:'←',title:'Previous app',onclick(){carouselSelection=(carouselSelection-1+ids.length)%ids.length;drawCarousel()}}),
+  h('span',{textContent:selected?apps[selected].name:'No results'}),
+  h('button',{textContent:'→',title:'Next app',onclick(){carouselSelection=(carouselSelection+1)%ids.length;drawCarousel()}}),
+  h('small',{textContent:'Click an icon to open · Right-click to pin/unpin · Esc to close'}));
+ shell.append(head,search,tabs,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
+}
+function toggleCarousel(){
+ if(carouselOpen){closeCarousel();return}
+ if(document.querySelector('#lock'))return;
+ closePop();carouselOpen=true;carouselQuery='';carouselGroup='All Apps';carouselSelection=0;
+ carouselRoot.hidden=false;drawCarousel();requestAnimationFrame(()=>carouselRoot.classList.add('active'));
+}
+document.addEventListener('keydown',e=>{
+ if(!carouselOpen)return;
+ if(e.key==='Escape'){e.preventDefault();closeCarousel()}
+ else if(e.target.tagName!=='INPUT'&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){
+  e.preventDefault();const n=carouselIds().length;if(!n)return;
+  carouselSelection=(carouselSelection+(e.key==='ArrowRight'?1:-1)+n)%n;drawCarousel();
+ }else if(e.target.tagName!=='INPUT'&&e.key==='Enter'){
+  const id=carouselIds()[carouselSelection];if(id)launchCarouselApp(id);
+ }
+});
+document.addEventListener('curios:session-lock',closeCarousel);
+document.addEventListener('curios:session-logout',closeCarousel);
+
 $('#dock').onclick=e=>{
  const b=e.target.closest('button[data-a]');if(!b)return;
  e.stopPropagation();const a=b.dataset.a;
  if(a==='menu'){
   if(editMode)return;
-  const ids=['files','media','images','videoimport','scribe','alchemy','photos','reelmagick','ppl','vault'];
-  const run=Object.entries(wins).map(([id,w])=>h('button',{textContent:(w.e.style.display==='none'?'○ ':'● ')+w.t,onclick(){closePop();show(id)}}));
-  popAt(b,...ids.map(appEntry),h('div',{className:'launcher-settings-divider'}),appEntry('sys'),...(run.length?[h('div',{className:'hd',textContent:'Running (○ = minimized)',style:'margin:8px 0 2px;padding:0 10px'}),...run]:[]));
+  toggleCarousel();
  }else if(a==='session'){
   popAt(b,h('div',{className:'hd',textContent:'Session'}),h('button',{textContent:'Lock',onclick(){closePop();lockSession()}}),h('button',{textContent:'Log Out',onclick(){closePop();logoutSession()}}));
  }else if(a==='vol'){

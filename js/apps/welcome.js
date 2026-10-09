@@ -4,6 +4,7 @@ import {SB} from '../kernel/supabase.js';
 const key=()=>`curios.welcome.hide.v1:${SB?.user?.id||SB?.email||'local'}`;
 const items=[
  ['Your Desktop','Use the dock to launch applications, switch windows, and manage your session.'],
+ ['Spatial App Carousel','Click the App Menu icon on the dock to materialize a slowly rotating carousel at the center of your desktop. Search for apps or switch category groups to explore your applications.'],
  ['Your Files','Organize documents, images, music, and videos in your persistent CuriOS filesystem.'],
  ['Your Terminal','Press Ctrl + Space to open the integrated terminal drawer.'],
  ['Universal Context Menu','Right-click around CuriOS for context-sensitive actions, tools, and Quick Launch shortcuts.'],
