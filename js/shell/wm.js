@@ -12,7 +12,7 @@ export const show=id=>{const w=wins[id];w.e.style.display='flex';w.e.style.zInde
 const APP_ICONS={files:'assets/apps/files.png',media:'assets/apps/media.png',videoimport:'assets/apps/videoimport.png',images:'assets/apps/images.png',scribe:'assets/apps/scribe.png',alchemy:'assets/apps/alchemy.png',photos:'assets/apps/photoalbum.png',reelmagick:'assets/apps/reelmagick.png',ppl:'assets/apps/ppl.png',vault:'assets/apps/vault.png',sys:'assets/apps/settings.png'};
 const appKey=id=>id.startsWith('scribe:')?'scribe':id.split(':')[0];
 export function win(id,title,w,hh,build,onclose){
- if(wins[id]){wins[id].e.style.display='flex';wins[id].e.style.zIndex=++z;return wins[id]}
+ if(wins[id]){wins[id].e.style.display='flex';wins[id].e.style.zIndex=++z;wins[id].e.classList.remove('curios-window-reenter');void wins[id].e.offsetWidth;wins[id].e.classList.add('curios-window-reenter');return wins[id]}
  const n=Object.keys(wins).length,e=h('div',{className:'win'}),bd=h('div',{className:'bd'});
  e.dataset.winId=id;
  const ff=formFactor();e.style.cssText=ff.mode==='phone'?`left:0;top:var(--mobile-dock-h);width:100%;height:calc(100dvh - var(--mobile-dock-h));z-index:${++z}`:`left:${90+n*30}px;top:${96+n*26}px;width:${Math.min(w,innerWidth-24)}px;height:${Math.min(hh,innerHeight-100)}px;z-index:${++z}`;e.classList.toggle('mobile-full',ff.mode==='phone');

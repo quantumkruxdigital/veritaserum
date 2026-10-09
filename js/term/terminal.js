@@ -4,6 +4,9 @@ import {$, h} from '../kernel/util.js';
 import {isRoot} from '../kernel/root.js';
 
 const tp=$('#tp'),root=h('div',{className:'split'});
+let carouselSuspended=false;
+document.addEventListener('curios:carousel-open',()=>{carouselSuspended=true;tp.inert=true;});
+document.addEventListener('curios:carousel-close',()=>{carouselSuspended=false;tp.inert=!tp.classList.contains('on');});
 tp.append(root);
 export let H=[];
 try{H=JSON.parse(localStorage.getItem('curios.hist'))||[]}catch{}
@@ -26,12 +29,12 @@ function pane(cwd){
 const panes=()=>tp.querySelectorAll('.pane');
 export function split(el,dir){if(panes().length>=8)throw'pane limit reached (8)';const n=pane(el.io.cwd),sp=h('div',{className:'split'+(dir=='h'?' col':'')});el.parentNode.replaceChild(sp,el);sp.append(el,n);n.inp.focus()}
 export function closePane(el){const p=el.parentNode;if(p===root){togTerm(false);return}el.remove();if(p.children.length==1)p.replaceWith(p.firstChild);(root.querySelector('.pane')).inp.focus()}
-export function togTerm(on){on=on??!tp.classList.contains('on');tp.classList.toggle('on',on);tp.inert=!on;if(on)setTimeout(()=>(act||root.querySelector('.pane')).inp.focus(),30)}
+export function togTerm(on){if(carouselSuspended)return;on=on??!tp.classList.contains('on');tp.classList.toggle('on',on);tp.inert=!on;if(on)setTimeout(()=>(act||root.querySelector('.pane')).inp.focus(),30)}
 const p0=pane('/Documents');
 root.append(p0);
 act=p0;
 p0.classList.add('act');
-const terminalHotkey=e=>{if(e.ctrlKey&&(e.code==='Space'||e.key===' ')){e.preventDefault();e.stopPropagation();togTerm()}};
+const terminalHotkey=e=>{if(carouselSuspended){if(e.ctrlKey&&(e.code==='Space'||e.key===' ')){e.preventDefault();e.stopImmediatePropagation()}return}if(e.ctrlKey&&(e.code==='Space'||e.key===' ')){e.preventDefault();e.stopPropagation();togTerm()}};
 addEventListener('keydown',terminalHotkey,{capture:true});
 addEventListener('curios:terminal-toggle',()=>togTerm());
 export function setHist(a){H=a}

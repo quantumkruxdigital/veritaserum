@@ -206,7 +206,7 @@ const carouselGroups={
 };
 let carouselOpen=false,carouselGroup='All Apps',carouselSelection=0,carouselQuery='';
 // A single rotation state survives category changes and carousel redraws.
-let carouselAngle=0,carouselVelocity=0,carouselDragging=false,carouselPointer=null,carouselLastX=0,carouselLastTime=0,carouselFrame=0,carouselFrameTime=0;
+let carouselCloseTimer=0,carouselAngle=0,carouselVelocity=0,carouselDragging=false,carouselPointer=null,carouselLastX=0,carouselLastTime=0,carouselFrame=0,carouselFrameTime=0;
 function animateCarousel(time){
  const dt=Math.min(48,time-(carouselFrameTime||time));carouselFrameTime=time;
  if(carouselOpen){
@@ -216,7 +216,7 @@ function animateCarousel(time){
    if(Math.abs(carouselVelocity)<.003){carouselVelocity=0;carouselAngle+=360*dt/68000}
   }
   const orbit=carouselRoot.querySelector('.curios-carousel-orbit');
-  if(orbit)orbit.style.transform=`rotateY(${carouselAngle}deg)`;
+  if(orbit)orbit.style.transform=`rotateX(-7deg) rotateY(${carouselAngle}deg)`;
   carouselFrame=requestAnimationFrame(animateCarousel);
  }
 }
@@ -247,7 +247,7 @@ $('#fit').append(carouselRoot);
 const carouselIds=()=>carouselGroups[carouselGroup].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
 function closeCarousel(){
  if(!carouselOpen)return;
- carouselOpen=false;carouselDragging=false;carouselPointer=null;cancelAnimationFrame(carouselFrame);carouselFrameTime=0;carouselRoot.classList.remove('active');carouselRoot.hidden=true;
+ carouselOpen=false;carouselDragging=false;carouselPointer=null;cancelAnimationFrame(carouselFrame);carouselFrameTime=0;carouselRoot.classList.remove('active');document.dispatchEvent(new CustomEvent('curios:carousel-close'));clearTimeout(carouselCloseTimer);carouselCloseTimer=setTimeout(()=>{if(!carouselOpen)carouselRoot.hidden=true},500);
 }
 function launchCarouselApp(id){closeCarousel();apps[id]?.open()}
 function drawCarousel(){
@@ -283,7 +283,7 @@ function toggleCarousel(){
  if(carouselOpen){closeCarousel();return}
  if(document.querySelector('#lock'))return;
  closePop();carouselOpen=true;carouselQuery='';carouselGroup='All Apps';carouselSelection=0;
- carouselRoot.hidden=false;drawCarousel();carouselFrameTime=0;carouselFrame=requestAnimationFrame(animateCarousel);requestAnimationFrame(()=>carouselRoot.classList.add('active'));
+ clearTimeout(carouselCloseTimer);carouselRoot.hidden=false;document.dispatchEvent(new CustomEvent('curios:carousel-open'));drawCarousel();carouselFrameTime=0;carouselFrame=requestAnimationFrame(animateCarousel);requestAnimationFrame(()=>carouselRoot.classList.add('active'));
 }
 document.addEventListener('keydown',e=>{
  if(!carouselOpen)return;
