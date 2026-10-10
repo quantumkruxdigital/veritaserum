@@ -52,13 +52,40 @@ function digitalSpace(canvas){
  resize();addEventListener('resize',resize,{passive:true});draw(0);
  return{reveal(p,cb){panel=p;done=cb;if(reduce){canvas.closest('#lock')?.classList.add('login-revealing','reduced');setTimeout(()=>cb?.(),650);return}for(const d of dots){d.ox=d.x;d.oy=d.y}mode='reveal';start=performance.now();canvas.closest('#lock')?.classList.add('login-revealing')},stop(){cancelAnimationFrame(raf);removeEventListener('resize',resize)}}
 }
+// Keep desktop controls from stealing focus while authentication is visible.
+// Do not repeatedly refocus a field: that would interfere with typing and autofill.
+function guardLoginFocus(lock,panel,preferred){
+ const controls=()=>[...panel.querySelectorAll('input:not([disabled]),button:not([disabled])')].filter(el=>el.getClientRects().length);
+ const onFocus=e=>{
+  if(!lock.isConnected||lock.classList.contains('login-success'))return;
+  if(!lock.contains(e.target)){
+   const target=panel.contains(document.activeElement)?document.activeElement:preferred;
+   queueMicrotask(()=>{if(lock.isConnected&&!lock.classList.contains('login-success'))(target?.isConnected?target:controls()[0])?.focus({preventScroll:true})});
+  }
+ };
+ const onKeys=e=>{
+  if(!lock.isConnected||lock.classList.contains('login-success'))return;
+  if(e.key==='Tab'){
+   const items=controls();if(!items.length)return;
+   const i=items.indexOf(document.activeElement);
+   if(e.shiftKey&&(i<=0)){e.preventDefault();items[items.length-1].focus()}
+   else if(!e.shiftKey&&(i===items.length-1||i<0)){e.preventDefault();items[0].focus()}
+  }
+ };
+ document.addEventListener('focusin',onFocus,true);
+ lock.addEventListener('keydown',onKeys);
+ const cleanup=()=>{document.removeEventListener('focusin',onFocus,true);lock.removeEventListener('keydown',onKeys)};
+ const observer=new MutationObserver(()=>{if(!lock.isConnected){cleanup();observer.disconnect()}});
+ observer.observe(lock.parentNode,{childList:true});
+ return cleanup;
+}
 function successful(lock,space,panel,cb){lock.classList.add('login-success');panel.querySelectorAll('input,button,.msg').forEach(e=>e.disabled=true);space.reveal(panel,()=>{lock.classList.add('login-finish');setTimeout(cb,660)})}
 export function showLogin(msg){const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg',textContent:msg||''}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'});
  let busy=false,space;const panel=h('div',{className:'vf login-panel'},h('div',{className:'login-brand',textContent:'CuriOS'}),h('div',{className:'login-title',textContent:'Sign in to your desktop'}),e,p,h('button',{className:'btn',textContent:'Sign in'}),h('button',{className:'btn',textContent:'Create account'}),m);const lock=h('div',{id:'lock'},canvas,panel);
- const go=async up=>{if(busy)return;m.style.color='';m.textContent='';await enterCuriOSFullscreen();if(!document.fullscreenElement){m.textContent='Fullscreen access is required to enter CuriOS. Please allow fullscreen and try again.';return}try{const j=await sbAuth(up?'signup':'token?grant_type=password',{email:e.value.trim(),password:p.value});if(!j.access_token){leaveCuriOSFullscreen();m.style.color='var(--dim)';m.textContent='Check your email to confirm the account, then sign in.';return}busy=true;sbSet(j);successful(lock,space,panel,()=>{space.stop();lock.remove();dispatchEvent(new CustomEvent('curios:authenticated'))})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x)}};panel.querySelectorAll('button')[0].onclick=()=>go(0);panel.querySelectorAll('button')[1].onclick=()=>go(1);p.onkeydown=ev=>ev.key==='Enter'&&go(0);$('#fit').append(lock);space=digitalSpace(canvas);setTimeout(()=>e.focus(),50)}
+ const go=async up=>{if(busy)return;m.style.color='';m.textContent='';await enterCuriOSFullscreen();if(!document.fullscreenElement){m.textContent='Fullscreen access is required to enter CuriOS. Please allow fullscreen and try again.';return}try{const j=await sbAuth(up?'signup':'token?grant_type=password',{email:e.value.trim(),password:p.value});if(!j.access_token){leaveCuriOSFullscreen();m.style.color='var(--dim)';m.textContent='Check your email to confirm the account, then sign in.';return}busy=true;sbSet(j);successful(lock,space,panel,()=>{space.stop();lock.remove();dispatchEvent(new CustomEvent('curios:authenticated'))})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x)}};panel.querySelectorAll('button')[0].onclick=()=>go(0);panel.querySelectorAll('button')[1].onclick=()=>go(1);p.onkeydown=ev=>ev.key==='Enter'&&go(0);$('#fit').append(lock);guardLoginFocus(lock,panel,e);space=digitalSpace(canvas);requestAnimationFrame(()=>{if(lock.isConnected)e.focus({preventScroll:true})})}
 
 export function showLock(onUnlock){
  if(document.querySelector('#lock'))return;
  const p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg'}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'}),panel=h('div',{className:'vf login-panel lock-panel'},h('div',{className:'login-brand',textContent:'CuriOS'}),h('div',{className:'login-title',textContent:'Session locked'}),SB?.email?h('div',{className:'lock-user',textContent:SB.email}):h('div',{className:'lock-user',textContent:'Local session'}),p,h('button',{className:'btn',textContent:'Unlock'}),m),lock=h('div',{id:'lock'},canvas,panel);let busy=false,space;
- const unlock=async()=>{if(busy)return;m.textContent='';await enterCuriOSFullscreen();if(!document.fullscreenElement){m.textContent='Fullscreen access is required to unlock CuriOS. Please allow fullscreen and try again.';return}try{if(SB?.email){const j=await sbAuth('token?grant_type=password',{email:SB.email,password:p.value});if(!j.access_token)throw'Unable to unlock.';sbSet(j)}busy=true;successful(lock,space,panel,()=>{space.stop();lock.remove();onUnlock?.()})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x);p.select()}};panel.querySelector('button').onclick=unlock;p.onkeydown=e=>e.key==='Enter'&&unlock();if(!SB?.email)p.style.display='none';$('#fit').append(lock);space=digitalSpace(canvas);setTimeout(()=>SB?.email?p.focus():panel.querySelector('button')?.focus(),50)
+ const unlock=async()=>{if(busy)return;m.textContent='';await enterCuriOSFullscreen();if(!document.fullscreenElement){m.textContent='Fullscreen access is required to unlock CuriOS. Please allow fullscreen and try again.';return}try{if(SB?.email){const j=await sbAuth('token?grant_type=password',{email:SB.email,password:p.value});if(!j.access_token)throw'Unable to unlock.';sbSet(j)}busy=true;successful(lock,space,panel,()=>{space.stop();lock.remove();onUnlock?.()})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x);p.select()}};panel.querySelector('button').onclick=unlock;p.onkeydown=e=>e.key==='Enter'&&unlock();if(!SB?.email)p.style.display='none';$('#fit').append(lock);const preferred=SB?.email?p:panel.querySelector('button');guardLoginFocus(lock,panel,preferred);space=digitalSpace(canvas);requestAnimationFrame(()=>{if(lock.isConnected)preferred?.focus({preventScroll:true})})
 }
