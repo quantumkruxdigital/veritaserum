@@ -22,7 +22,7 @@ function setDesktopImage(url){
   document.documentElement.style.setProperty('--wallpaper',css);
   if(desk){
     desk.style.backgroundImage=`linear-gradient(#03071122,#03071122),${css}`;
-    desk.style.backgroundPosition='center';
+    desk.style.backgroundPosition='center, calc(50% + 15px) center';
     desk.style.backgroundSize='cover';
     desk.style.backgroundRepeat='no-repeat';
   }

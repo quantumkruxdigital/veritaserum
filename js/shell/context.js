@@ -4,7 +4,7 @@ import {h} from '../kernel/util.js';
 const KEY='curios.quickLaunch.v1';
 let launchApp=()=>{}, openPath=()=>{};
 const providers=new Map();
-const appNames={files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick',ppl:'CuriOS-Ppl'};
+const appNames={rift:'RIFT',welcome:'Welcome to CuriOS',files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick',ppl:'CuriOS-Ppl'};
 const appAliases={menu:null,term:null,vol:null,files:'files',vault:'vault'};
 
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(saved)?saved.filter(x=>!(x.type==='app'&&x.target==='sam')):[]}catch{return[]}}
@@ -23,10 +23,26 @@ function item(label,fn,cls='',disabled=false,children=null){const b=h('button',{
 function sep(label){return h('div',{className:'ctx-sep',textContent:label})}
 function show(x,y,items){const m=ensure();m.replaceChildren(...items);m.style.display='block';m.style.left='0';m.style.top='0';const r=m.getBoundingClientRect(),px=Math.max(4,Math.min(innerWidth-r.width-4,x)),py=Math.max(4,Math.min(innerHeight-r.height-4,y));m.style.left=px+'px';m.style.top=py+'px'}
 
-function quickItems(){const pins=load(),out=[sep('Quick Launch')];if(!pins.length)out.push(h('div',{className:'ctx-empty',textContent:'Nothing pinned yet'}));
- for(const q of pins){const label=(q.type=='app'?'◆ ':'▸ ')+(q.label||q.target);out.push(item(label,()=>q.type=='app'?launchApp(q.target):openPath(q.target)))}
+const commonFolders=['/Desktop','/Documents','/Downloads','/Pictures','/Music','/Videos'];
+function addChoices(){
+ const appChoices=Object.entries(appNames).filter(([id])=>id!=='sam').map(([id,label])=>{
+  const q={type:'app',target:id,label};return {label:(isPinned(q)?'✓ ':'＋ ')+label,disabled:isPinned(q),action:()=>pinQuick(q)};
+ });
+ const folderChoices=commonFolders.map(path=>{
+  const q={type:'path',target:path,label:path.slice(1)};return {label:(isPinned(q)?'✓ ':'＋ ')+q.label,disabled:isPinned(q),action:()=>pinQuick(q)};
+ });
+ return [{label:'Applications',children:appChoices},{label:'Folders',children:folderChoices}];
+}
+function quickItems(){const pins=load(),out=[sep('Quick Launch')];
+ out.push(item('＋ Add to Quick Launch',null,'',false,addChoices()));
+ if(!pins.length)out.push(h('div',{className:'ctx-empty',textContent:'No shortcuts yet — add one above'}));
+ for(const q of pins){const label=(q.type==='app'?'◆ ':'▸ ')+(q.label||q.target);
+  out.push(item(label,()=>q.type==='app'?launchApp(q.target):openPath(q.target)));
+ }
+ if(pins.length)out.push(item('− Remove shortcut',null,'',false,pins.map(q=>({label:q.label||q.target,action:()=>unpinQuick(q)}))));
  return out;
 }
+
 function universal(target){const out=[];const appBtn=target.closest?.('#dock button[data-a]');if(appBtn){const id=appAliases[appBtn.dataset.a];if(id){const q={type:'app',target:id,label:appNames[id]||id};out.push(item(isPinned(q)?'Unpin '+q.label+' from Quick Launch':'Pin '+q.label+' to Quick Launch',()=>isPinned(q)?unpinQuick(q):pinQuick(q)),sep('Universal'))}}
  out.push(...quickItems());out.push(sep('Universal'),item('Open Files',()=>launchApp('files')),item('Open Terminal',()=>window.dispatchEvent(new CustomEvent('curios:terminal-toggle'))));return out}
 

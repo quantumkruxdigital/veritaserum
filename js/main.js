@@ -1,3 +1,4 @@
+import {rift} from './apps/rift.js';
 // Boot: mount the filesystem, restore the desktop, keep it synced.
 import {alchemy} from './apps/alchemy.js';
 import {files} from './apps/files.js';
@@ -60,7 +61,7 @@ async function boot(){const say=t=>act.io.say(t);
  }catch(e){setSys({V:LocalFS,remote:false,KV:RunnerKV});say('Not mounted ('+String(e?.message||e)+'). Using this browser\'s files.')}}
 boot();
 addEventListener('curios:authenticated',()=>boot(),{once:true});
-const launchers={files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),ppl:()=>ppl(),welcome:()=>showWelcome(),sys:()=>settings(),vault:()=>vault()};
+const launchers={rift:()=>rift(),files:()=>files(),media:()=>media(),images:()=>imageViewer(),videoimport:()=>videoImporter(),scribe:()=>scribe('/Documents/untitled.scribe'),alchemy:()=>alchemy(),photos:()=>photoAlbum(),reelmagick:()=>reelMagick(),ppl:()=>ppl(),welcome:()=>showWelcome(),sys:()=>settings(),vault:()=>vault()};
 configureContext({launchApp:id=>launchers[id]?.(),openPath:async p=>{const st=await V.stat(p).catch(()=>null);if(st?.type=='d')files(p);else if(isReelProject(p))reelMagick(p);else if(/\.(png|jpe?g|gif|webp|bmp|svg|avif)$/i.test(p))imageViewer(p);else if(/\.(mp4|webm|ogv|mov|m4v|mkv)$/i.test(p))reelMagick(p);else if(p)files(p)}});
 // Terminal owns both Ctrl+Space and the curios:terminal-toggle event directly.
 act.io.say('kernel ready · '+Object.keys(fs).length+' fs nodes · terminal resident (Ctrl+Space)');

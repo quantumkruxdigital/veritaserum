@@ -9,7 +9,7 @@ addEventListener('resize',fit);
 export const wins={};
 let z=10;
 export const show=id=>{const w=wins[id];w.e.style.display='flex';w.e.style.zIndex=++z};
-const APP_ICONS={files:'assets/apps/files.png',media:'assets/apps/media.png',videoimport:'assets/apps/videoimport.png',images:'assets/apps/images.png',scribe:'assets/apps/scribe.png',alchemy:'assets/apps/alchemy.png',photos:'assets/apps/photoalbum.png',reelmagick:'assets/apps/reelmagick.png',ppl:'assets/apps/ppl.png',vault:'assets/apps/vault.png',sys:'assets/apps/settings.png'};
+const APP_ICONS={rift:'assets/apps/rift.svg',files:'assets/apps/files.png',media:'assets/apps/media.png',videoimport:'assets/apps/videoimport.png',images:'assets/apps/images.png',scribe:'assets/apps/scribe.png',alchemy:'assets/apps/alchemy.png',photos:'assets/apps/photoalbum.png',reelmagick:'assets/apps/reelmagick.png',ppl:'assets/apps/ppl.png',vault:'assets/apps/vault.png',sys:'assets/apps/settings.png'};
 const appKey=id=>id.startsWith('scribe:')?'scribe':id.split(':')[0];
 export function win(id,title,w,hh,build,onclose){
  if(wins[id]){wins[id].e.style.display='flex';wins[id].e.style.zIndex=++z;wins[id].e.classList.remove('curios-window-reenter');void wins[id].e.offsetWidth;wins[id].e.classList.add('curios-window-reenter');return wins[id]}

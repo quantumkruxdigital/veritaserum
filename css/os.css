@@ -54,7 +54,7 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 
 /* CuriOS desktop wallpaper */
 :root{--wallpaper:url("../assets/curios-circuit.svg")}
-#desk{background-color:#030711;background-image:linear-gradient(#03071122,#03071122),var(--wallpaper);background-position:center;background-size:cover;background-repeat:no-repeat}
+#desk{background-color:#030711;background-image:linear-gradient(#03071122,#03071122),var(--wallpaper);background-position:center,calc(50% + 15px) center;background-size:cover;background-repeat:no-repeat}
 .wallpaper-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0 12px}.wallpaper-card{border:1px solid var(--ln);background:#091125;padding:5px;cursor:pointer;color:var(--tx);text-align:left}.wallpaper-card:hover,.wallpaper-card.sel{border-color:var(--cy);color:var(--cy)}.wallpaper-thumb{display:block;width:100%;height:82px;object-fit:cover;background:#030711;margin-bottom:5px}.wallpaper-path{color:var(--dim);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* CuriOS Images editor */
@@ -233,3 +233,11 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 /* Keep the detached clock crisp above the spatial launcher backdrop. */
 #fit>#clk.desktop-clock{isolation:isolate;text-shadow:0 0 1px #ffffff,0 0 5px #b9fff2b3,0 0 12px #53e8d566,0 2px 9px #000d}
 #fit:has(.curios-carousel-overlay.active)>#clk.desktop-clock{color:#fff;text-shadow:0 0 1px #fff,0 0 4px #ffffffb3,0 0 10px #8afce7b3,0 0 20px #3fe7d680,0 2px 9px #000d}
+/* RIFT: integrated CuriOS fighting arena */
+.rift-root{background:#07111d!important;overflow:auto!important}.rift-shell{display:flex;flex-direction:column;gap:9px;padding:12px;height:100%;box-sizing:border-box;color:#dffcf9;font:13px system-ui,sans-serif}.rift-shell canvas{width:100%;max-height:calc(100% - 83px);object-fit:contain;aspect-ratio:24/13;background:#081321;border:1px solid #4dded45a;border-radius:12px;outline:none}.rift-shell canvas:focus{border-color:#69ffe9;box-shadow:0 0 0 2px #69ffe925}.rift-controls{display:flex;align-items:center;gap:12px}.rift-controls span{margin-right:auto;font-weight:700;letter-spacing:.1em}.rift-controls button{border:1px solid #62f7e85c;border-radius:8px;padding:7px 12px;background:#1a3340;color:#e7fffd;cursor:pointer}.rift-shell>span{font-size:11px;color:#a9d1d0;text-align:center}
+
+/* Longer two-orbit sign-in signature; the entire particle field dissolves to desktop. */
+#lock.login-revealing .login-panel{transition:transform 5.8s cubic-bezier(.2,.7,.2,1),opacity .7s ease 5.05s,box-shadow 1s ease;opacity:0;transform:scale(.985)}
+#lock.login-revealing .login-brand,#lock.login-revealing .login-title,#lock.login-revealing .lock-user{transition:opacity .6s ease 4.9s;opacity:0}
+#lock.login-finish{transition:opacity .95s cubic-bezier(.22,1,.36,1)!important;opacity:0;pointer-events:none}
+@media(prefers-reduced-motion:reduce){#lock.login-revealing .login-panel{transition:none;opacity:1}#lock.login-finish{transition:opacity .5s ease!important}}

@@ -10,6 +10,7 @@ import {vault} from '../apps/vault.js';
 import {photoAlbum} from '../apps/photo-album.js';
 import {reelMagick} from '../apps/reel-magick.js';
 import {ppl} from '../apps/ppl.js';
+import {rift} from '../apps/rift.js';
 import {showWelcome} from '../apps/welcome.js';
 import {beep} from '../kernel/audio.js';
 import {dev} from '../kernel/device.js';
@@ -53,6 +54,7 @@ function applyDockPlacement(){
 
 
 const apps={
+ rift:{name:'RIFT',open:rift,icon:'assets/apps/rift.svg'},
  files:{name:'Files',open:files,icon:'assets/apps/files.png'},
  media:{name:'Media',open:media,icon:'assets/apps/media.png'},
  images:{name:'Images',open:imageViewer,icon:'assets/apps/images.png'},
@@ -75,6 +77,8 @@ const I={
 
 let editMode=false;
 let dragged=null;
+let dragDroppedInside=false;
+let dragEndPoint=null;
 
 function readJSON(key,fallback){
  try{const v=JSON.parse(localStorage.getItem(key));return v??fallback}catch{return fallback}
@@ -128,7 +132,7 @@ function movableProps(id){
   className:'dock-movable',
   draggable:editMode,
   dataset:{dockItem:id},
-  title:editMode?'Drag to rearrange':undefined
+  title:editMode?(id==='menu'?'Drag to rearrange':'Drag to rearrange or off dock to unpin'):undefined
  };
 }
 
@@ -137,7 +141,7 @@ function iconButton(id){
  const b=h('button',{
   ...movableProps(id),
   className:'dock-app dock-movable',
-  title:editMode?'Drag to rearrange':a.name,
+  title:editMode?'Drag to rearrange or off dock to unpin':a.name,
   dataset:{app:id,dockItem:id},
   onclick:e=>{if(editMode){e.preventDefault();return}if(wins[id])show(id);else a.open()}
  });
@@ -214,7 +218,7 @@ function appEntry(id){
 const carouselGroups={
  'All Apps':Object.keys(apps).filter(id=>id!=='welcome'),
  'Create':['images','scribe','alchemy','reelmagick','photos'],
- 'Explore':['files','media','videoimport','ppl'],
+ 'Explore':['files','media','videoimport','ppl','rift'],
  'System':['vault','sys']
 };
 let carouselOpen=false,carouselGroup='All Apps',carouselSelection=0,carouselQuery='';
@@ -343,7 +347,7 @@ const left=$('#dock-left');
 left.addEventListener('dragstart',e=>{
  if(!editMode)return e.preventDefault();
  const b=e.target.closest('[data-dock-item]');if(!b)return;
- dragged=b;b.classList.add('dock-dragging');
+ dragged=b;dragDroppedInside=false;dragEndPoint=null;b.classList.add('dock-dragging');
  e.dataTransfer.effectAllowed='move';
  e.dataTransfer.setData('text/plain',b.dataset.dockItem);
 });
@@ -353,18 +357,36 @@ left.addEventListener('dragover',e=>{
  const target=e.target.closest('[data-dock-item]');
  if(!target||target===dragged)return;
  const r=target.getBoundingClientRect();
- const before=e.clientX<r.left+r.width/2;
+ const vertical=getDockPlacement()==='right';
+ const before=vertical?e.clientY<r.top+r.height/2:e.clientX<r.left+r.width/2;
  left.insertBefore(dragged,before?target:target.nextSibling);
 });
 left.addEventListener('drop',e=>{
  if(!editMode||!dragged)return;
  e.preventDefault();
+ dragDroppedInside=true;
  storeOrder([...left.querySelectorAll('[data-dock-item]')].map(x=>x.dataset.dockItem));
 });
-left.addEventListener('dragend',()=>{
+// Dragging a pinned app outside the whole dock unpins its shortcut.
+// The application itself is never deleted; the permanent Apps launcher stays.
+left.addEventListener('dragend',e=>{
  if(!dragged)return;
+ const id=dragged.dataset.dockItem;
+ const dock=$('#dock');
+ const bounds=dock.getBoundingClientRect();
+ const x=e.clientX,y=e.clientY;
+ const outside=Number.isFinite(x)&&Number.isFinite(y)&&
+   (x<bounds.left||x>bounds.right||y<bounds.top||y>bounds.bottom);
  dragged.classList.remove('dock-dragging');dragged=null;
- storeOrder([...left.querySelectorAll('[data-dock-item]')].map(x=>x.dataset.dockItem));
+ if(!dragDroppedInside&&outside&&id!=='menu'&&pins().includes(id)){
+  const remaining=pins().filter(pin=>pin!==id);
+  storePins(remaining);
+  storeOrder(order().filter(item=>item!==id));
+  renderDock();
+ }else{
+  storeOrder([...left.querySelectorAll('[data-dock-item]')].map(item=>item.dataset.dockItem));
+ }
+ dragDroppedInside=false;
 });
 
 addEventListener('pointerdown',e=>{if(!e.target.closest('#pop,#dock'))closePop()});
