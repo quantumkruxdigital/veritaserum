@@ -5,6 +5,7 @@ import {h} from '../kernel/util.js';
 import {KV} from '../kernel/vfs.js';
 import {SB} from '../kernel/supabase.js';
 import {getRiftAccount,saveRiftAppearance} from '../kernel/rift-account.js';
+import {getLobby,heartbeat,sendChallenge,respondChallenge,getInvites} from '../kernel/rift-lobby.js';
 const W=960,H=520,FLOOR=418,STEP=1/60;
 const MOVES={light:{startup:5,active:4,recovery:11,damage:7,range:98,stun:16,push:20},heavy:{startup:12,active:5,recovery:22,damage:15,range:115,stun:25,push:38},special:{startup:19,active:7,recovery:31,damage:23,range:152,stun:33,push:58}};
 // Sprite-sheet support: each state can map to {src,frames,fps,width,height}.
@@ -91,10 +92,50 @@ export function rift(){
  win('rift','CuriOS RIFT · Arena',1080,690,root=>{
   root.classList.add('rift-root');
   const shell=h('div',{className:'rift-shell'}),hud=h('div',{className:'rift-controls'}),canvas=h('canvas',{width:W,height:H,tabIndex:0,'aria-label':'RIFT fighting arena'}),ctx=canvas.getContext('2d');
-  const status=h('span',{textContent:'FIRST TO 2 ROUNDS'}),creatorButton=h('button',{textContent:'Create Fighter'}),profileButton=h('button',{textContent:'Fighter Profile'}),mode=h('button',{textContent:'Opponent: CPU'}),reset=h('button',{textContent:'Restart Match'}),help=h('span',{textContent:'P1: A/D move · W jump · S block · J/K/U attacks  |  P2: ←/→ move · ↑ jump · ↓ block · 1/2/3 attacks'});
-  hud.append(status,profileButton,creatorButton,mode,reset);shell.append(hud,canvas,help);root.append(shell);
+  const status=h('span',{textContent:'FIRST TO 2 ROUNDS'}),creatorButton=h('button',{textContent:'Create Fighter'}),profileButton=h('button',{textContent:'Fighter Profile'}),lobbyButton=h('button',{textContent:'Online Lobby'}),mode=h('button',{textContent:'Opponent: CPU'}),reset=h('button',{textContent:'Restart Match'}),help=h('span',{textContent:'P1: A/D move · W jump · S block · J/K/U attacks  |  P2: ←/→ move · ↑ jump · ↓ block · 1/2/3 attacks'});
+  hud.append(status,profileButton,creatorButton,lobbyButton,mode,reset);shell.append(hud,canvas,help);root.append(shell);
   const uid=SB?.uid||null;
   let record=localRecord(uid),profile=applyUnlocks(record.fighter,levelForXp(record.xp)),creating=false,creatorPanel=null,viewingProfile=false,profilePanel=null,loaded=false,saveQueue=Promise.resolve();
+  let lobbyPanel=null,lobbyTimer=null,lobbyBusy=false;
+  function closeLobby(){if(lobbyTimer)clearInterval(lobbyTimer);lobbyTimer=null;lobbyPanel?.remove();lobbyPanel=null;canvas.style.display='';help.style.display='';canvas.focus()}
+  lobbyButton.onclick=()=>{
+   if(!uid){status.textContent='Sign in to CuriOS to enter the online lobby';return}
+   if(lobbyPanel){closeLobby();return}
+   if(creating||viewingProfile)return;
+   held.clear();pressed.clear();canvas.style.display='none';help.style.display='none';
+   lobbyPanel=h('section',{className:'rift-lobby'});
+   const heading=h('div',{className:'rift-lobby-heading'}),back=h('button',{textContent:'Back to Arena'}),feedback=h('p',{textContent:'Connecting to CuriOS fighters…'}),players=h('div'),invites=h('div');
+   heading.append(h('h2',{textContent:'RIFT / ONLINE LOBBY'}),back);back.onclick=closeLobby;
+   lobbyPanel.append(heading,h('p',{textContent:'Challenge online CuriOS users. Invitations are live; competitive matches are not yet enabled.'}),feedback,h('h3',{textContent:'AVAILABLE FIGHTERS'}),players,h('h3',{textContent:'YOUR CHALLENGES'}),invites);shell.append(lobbyPanel);
+   const refresh=async()=>{
+    if(!lobbyPanel||lobbyBusy)return;lobbyBusy=true;
+    try{
+     await heartbeat(profile.name);
+     const [online,requests]=await Promise.all([getLobby(),getInvites()]);
+     if(!lobbyPanel)return;
+     feedback.textContent='Online · '+online.length+' active fighter(s) · refreshes every 8 seconds';
+     players.replaceChildren();
+     for(const fighter of online.filter(x=>x.user_id!==uid)){
+      const item=h('div',{className:'rift-lobby-row'}),name=h('strong',{textContent:fighter.display_name}),challenge=h('button',{textContent:'Challenge'});
+      challenge.onclick=async()=>{challenge.disabled=true;try{await sendChallenge(fighter.user_id);feedback.textContent='Challenge sent to '+fighter.display_name;await refreshLater()}catch(e){feedback.textContent=String(e.message||e)}finally{challenge.disabled=false}};
+      item.append(name,challenge);players.append(item);
+     }
+     if(!players.childNodes.length)players.append(h('p',{textContent:'No other fighters online yet. Invite a friend to open RIFT.'}));
+     invites.replaceChildren();
+     for(const request of requests){
+      const incoming=request.opponent===uid,item=h('div',{className:'rift-lobby-row'});
+      item.append(h('span',{textContent:`${incoming?'Incoming':'Outgoing'} · ${request.status} · ${new Date(request.created_at).toLocaleTimeString()}`}));
+      if(incoming&&request.status==='pending')for(const [label,accept] of [['Accept',true],['Decline',false]]){
+       const button=h('button',{textContent:label});button.onclick=async()=>{button.disabled=true;try{const ok=await respondChallenge(request.id,accept);feedback.textContent=ok?(accept?'Challenge accepted! Match transport is the next milestone.':'Challenge declined.'):'Challenge expired';await refreshLater()}catch(e){feedback.textContent=String(e.message||e)}finally{button.disabled=false}};item.append(button)
+      }
+      invites.append(item);
+     }
+     if(!requests.length)invites.append(h('p',{textContent:'No invitations yet.'}));
+    }catch(e){feedback.textContent='Lobby unavailable: '+String(e.message||e)+' · Apply supabase/rift-lobby.sql'}finally{lobbyBusy=false}
+   };
+   async function refreshLater(){setTimeout(()=>{if(lobbyPanel)refresh()},250)}
+   refresh();lobbyTimer=setInterval(refresh,8000);
+  };
   const level=()=>levelForXp(record.xp);
   const showProgress=()=>{status.textContent=`LV ${level()} · ${record.xp} XP · FIRST TO 2 ROUNDS`};
   const persist=()=>{record.fighter=profile;record.updated=Date.now();saveLocal(uid,record);if(uid){const snapshot={...profile};saveQueue=saveQueue.catch(()=>{}).then(()=>saveRiftAppearance(snapshot)).catch(e=>{console.warn('[RIFT] Cosmetic save failed',e);status.textContent='Cosmetic save failed — check server setup'})}};
@@ -151,8 +192,8 @@ export function rift(){
    ctx.fillStyle='#0008';ctx.beginPath();ctx.ellipse(p1.x,FLOOR+4,43,10,0,0,Math.PI*2);ctx.ellipse(p2.x,FLOOR+4,43,10,0,0,Math.PI*2);ctx.fill();drawFighter(ctx,p1,profile);silhouette(p2);
    if(noticeFrames>0||ended){ctx.font='bold 36px system-ui';ctx.fillStyle='#fff';ctx.shadowColor='#65f9ec';ctx.shadowBlur=20;ctx.fillText(notice,480,175);ctx.shadowBlur=0}if(paused){ctx.fillStyle='#000a';ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='bold 38px system-ui';ctx.fillText('PAUSED · CLICK ARENA TO RESUME',480,260)}
   }
-  function loop(t){if(!canvas.isConnected){dispose();return}const dt=Math.min(.08,(t-last)/1000||0);last=t;acc+=dt;paused=creating||document.activeElement!==canvas||document.querySelector('.curios-carousel-overlay.active')!==null||document.querySelector('#lock:not([hidden])')!==null;while(acc>=STEP){tick();acc-=STEP}render();raf=requestAnimationFrame(loop)}
-  dispose=()=>{cancelAnimationFrame(raf);removeEventListener('keydown',keydown);removeEventListener('keyup',keyup)};raf=requestAnimationFrame(loop);
+  function loop(t){if(!canvas.isConnected){dispose();return}const dt=Math.min(.08,(t-last)/1000||0);last=t;acc+=dt;paused=creating||!!lobbyPanel||document.activeElement!==canvas||document.querySelector('.curios-carousel-overlay.active')!==null||document.querySelector('#lock:not([hidden])')!==null;while(acc>=STEP){tick();acc-=STEP}render();raf=requestAnimationFrame(loop)}
+  dispose=()=>{if(lobbyTimer)clearInterval(lobbyTimer);cancelAnimationFrame(raf);removeEventListener('keydown',keydown);removeEventListener('keyup',keyup)};raf=requestAnimationFrame(loop);
   setTimeout(()=>canvas.focus(),150);
  },dispose);
 }
