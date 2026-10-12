@@ -227,8 +227,8 @@ function appEntry(id){
 
 // Spatial app launcher: a keyboard-accessible, gently orbiting carousel.
 const carouselGroups={
- upper:{Explore:['voyager','ppl','welcome'],Relax:['rift','retrobox','media'],Create:['images','reelmagick','photos','videoimport']},
- lower:{Office:['scribe','files'],System:['sys','vault'],Utilities:['alchemy']}
+ upper:{Explore:['voyager','welcome'],Relax:['rift','retrobox','media'],Create:['images','reelmagick','photos']},
+ lower:{Office:['scribe','files'],System:['sys','vault'],Utilities:['alchemy','ppl','videoimport']}
 };
 const carouselCategory={upper:'Explore',lower:'Office'};
 let carouselOpen=false,carouselSelection=0,carouselQuery='';
