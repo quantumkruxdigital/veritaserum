@@ -12,6 +12,7 @@ import {reelMagick} from '../apps/reel-magick.js';
 import {ppl} from '../apps/ppl.js';
 import {rift} from '../apps/rift.js';
 import {retroBox} from '../apps/retro-box.js';
+import {voyager} from '../apps/voyager.js';
 import {showWelcome} from '../apps/welcome.js';
 import {beep} from '../kernel/audio.js';
 import {dev} from '../kernel/device.js';
@@ -55,7 +56,8 @@ function applyDockPlacement(){
 
 
 const apps={
- retrobox:{name:'Retro-Box',open:retroBox,icon:'assets/apps/retrobox.svg'},
+ voyager:{name:'Voyager',open:voyager,icon:'assets/apps/voyager.svg'},
+ retrobox:{name:'Retro-Box',open:retroBox,icon:'assets/apps/retrobox-custom.png'},
  rift:{name:'RIFT',open:rift,icon:'assets/apps/rift.svg'},
  files:{name:'Files',open:files,icon:'assets/apps/files.png'},
  media:{name:'Media',open:media,icon:'assets/apps/media.png'},
@@ -225,7 +227,7 @@ function appEntry(id){
 
 // Spatial app launcher: a keyboard-accessible, gently orbiting carousel.
 const carouselGroups={
- upper:{Explore:['rift','retrobox','media','ppl'],Create:['images','reelmagick','photos','videoimport'],Educate:['welcome']},
+ upper:{Explore:['voyager','rift','retrobox','media','ppl'],Create:['images','reelmagick','photos','videoimport'],Educate:['welcome']},
  lower:{Office:['scribe','files'],System:['sys','vault'],Utilities:['alchemy']}
 };
 const carouselCategory={upper:'Explore',lower:'Office'};
@@ -244,12 +246,16 @@ function animateCarousel(time){
   }
   const lower=carouselRoot.querySelector('.curios-carousel-orbit.lower');
   const upper=carouselRoot.querySelector('.curios-carousel-orbit.upper');
+  const lowerSub=carouselRoot.querySelector('.curios-carousel-orbit.lower-sub');
+  const upperSub=carouselRoot.querySelector('.curios-carousel-orbit.upper-sub');
   if(lower)lower.style.transform=`rotateX(-7deg) rotateY(${carouselAngle}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
   if(!carouselDragging||carouselActiveRing!=='upper'){
    carouselUpperAngle+=carouselActiveRing==='upper'?carouselUpperVelocity*dt:0;
    if(carouselActiveRing==='upper'){carouselUpperVelocity*=Math.pow(.94,dt/16);if(Math.abs(carouselUpperVelocity)<.003)carouselUpperVelocity=0;}
    if(!carouselUpperVelocity)carouselUpperAngle-=360*dt/82000;
   }
+  if(lowerSub)lowerSub.style.transform=`rotateX(-7deg) rotateY(${-carouselAngle*.78}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
+  if(upperSub)upperSub.style.transform=`rotateX(-7deg) rotateY(${-carouselUpperAngle*.78}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
   if(upper)upper.style.transform=`rotateX(-7deg) rotateY(${carouselUpperAngle}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
   carouselFrame=requestAnimationFrame(animateCarousel);
  }
@@ -259,7 +265,7 @@ function bindCarouselDrag(stage){
   // App cards remain clickable; empty gaps act as a grab handle.
   if(e.button!==0||e.target.closest('.curios-carousel-item'))return;
   const ring=e.target.closest('.curios-carousel-orbit');
-  if(ring)selectCarouselRing(ring.classList.contains('upper')?'upper':'lower',false);
+  if(ring)selectCarouselRing((ring.classList.contains('upper')||ring.classList.contains('upper-sub'))?'upper':'lower',false);
   carouselDragging=true;carouselPointer=e.pointerId;carouselLastX=e.clientX;carouselLastTime=performance.now();if(carouselActiveRing==='upper')carouselUpperVelocity=0;else carouselVelocity=0;
   stage.setPointerCapture(e.pointerId);stage.classList.add('grabbing');e.preventDefault();
  });
@@ -288,19 +294,24 @@ const categoryCount=(ring,category)=>carouselGroups[ring][category].filter(id=>a
 const ringEntries=(ring)=>{
  const groups=carouselGroups[ring];
  const expanded=expandedCarouselCategory[ring];
- const ids=expanded&&categoryCount(ring,expanded)>=5
-  ?groups[expanded]
-  :Object.entries(groups).flatMap(([category,items])=>categoryCount(ring,category)<5?items:[]);
+ // Main tier remains a 3D orbit; only an explicitly expanded category moves to its own orbit.
+ const ids=Object.entries(groups).flatMap(([category,items])=>category===expanded&&categoryCount(ring,category)>=5?[]:items);
  return [...new Set(ids)].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
 };
-const carouselIds=()=>[...ringEntries('upper'),...ringEntries('lower')];
+const subRingEntries=(ring)=>{
+ const category=expandedCarouselCategory[ring];
+ if(!category||categoryCount(ring,category)<5)return [];
+ return [...new Set(carouselGroups[ring][category])].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
+};
+const browseEntries=(ring)=>[...ringEntries(ring),...subRingEntries(ring)];
+const carouselIds=()=>[...browseEntries('upper'),...browseEntries('lower')];
 function closeCarousel(){
  if(!carouselOpen)return;
  carouselOpen=false;carouselDragging=false;carouselPointer=null;cancelAnimationFrame(carouselFrame);carouselFrameTime=0;carouselRoot.classList.remove('active');document.dispatchEvent(new CustomEvent('curios:carousel-close'));clearTimeout(carouselCloseTimer);carouselCloseTimer=setTimeout(()=>{if(!carouselOpen)carouselRoot.hidden=true},500);
 }
 function launchCarouselApp(id){closeCarousel();apps[id]?.open()}
 function selectCarouselRing(ring,redraw=true){
- const ids=carouselIds(),entries=ringEntries(ring);if(!entries.length)return;
+ const ids=carouselIds(),entries=browseEntries(ring);if(!entries.length)return;
  carouselActiveRing=ring;
  if(!entries.includes(ids[carouselSelection]))carouselSelection=ids.indexOf(entries[0]);
  if(redraw)drawCarousel();
@@ -317,6 +328,8 @@ function drawCarousel(){
  const tabs=h('div',{className:'curios-carousel-category-groups'},...['upper','lower'].map(r=>h('nav',{className:'curios-carousel-tabs','aria-label':(r==='upper'?'Upper':'Lower')+' ring categories'},h('span',{className:'curios-carousel-category-label',textContent:r==='upper'?'UPPER':'LOWER'}),...Object.keys(carouselGroups[r]).map(group=>h('button',{className:carouselCategory[r]===group?'selected':'',textContent:group+(categoryCount(r,group)>=5?' · '+categoryCount(r,group):''),title:categoryCount(r,group)>=5?'Open or close '+group+' sub-ring':'Included on primary ring',onclick(){carouselCategory[r]=group;expandedCarouselCategory[r]=categoryCount(r,group)>=5?(expandedCarouselCategory[r]===group?null:group):null;carouselActiveRing=r;carouselSelection=0;drawCarousel()}})))));
  const stage=h('div',{className:'curios-carousel-stage '+(carouselActiveRing==='upper'?'focus-upper':'focus-lower')});
  const upper=h('div',{className:'curios-carousel-orbit upper','aria-label':'Upper app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('upper')}});
+ const upperSub=h('div',{className:'curios-carousel-orbit upper-sub','aria-label':'Expanded upper category orbit'});
+ const lowerSub=h('div',{className:'curios-carousel-orbit lower-sub','aria-label':'Expanded lower category orbit'});
  const lower=h('div',{className:'curios-carousel-orbit lower','aria-label':'Lower app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('lower')}});
  bindCarouselDrag(stage);
  if(ids.length){
@@ -333,14 +346,15 @@ function drawCarousel(){
    });
   };
   populate(upper,upperIds,false);populate(lower,lowerIds,true);
+  populate(upperSub,subRingEntries('upper'),false);populate(lowerSub,subRingEntries('lower'),true);
   // The lower ring is the browsing focus. Upper apps remain directly clickable.
-  const activeEntries=carouselActiveRing==='upper'&&upperIds.length?upperIds:lowerIds;
+  const activeEntries=carouselActiveRing==='upper'&&browseEntries('upper').length?browseEntries('upper'):browseEntries('lower');
   if(!activeEntries.includes(ids[carouselSelection]))carouselSelection=ids.indexOf(activeEntries[0]);
  }else stage.append(h('p',{className:'curios-carousel-empty',textContent:'No matching applications'}));
- stage.append(upper,lower);
+ stage.append(upper,lower,upperSub,lowerSub);
  const selected=ids[carouselSelection];
  const ringControls=h('div',{className:'curios-carousel-ring-switch','aria-label':'Choose active carousel ring'},
-  ...['upper','lower'].map(r=>h('button',{className:carouselActiveRing===r?'active':'',textContent:r==='upper'?'Upper · '+carouselCategory.upper:'Lower · '+carouselCategory.lower,onclick(){selectCarouselRing(r)},'aria-pressed':String(carouselActiveRing===r),disabled:!ringEntries(r).length})));
+  ...['upper','lower'].map(r=>h('button',{className:carouselActiveRing===r?'active':'',textContent:r==='upper'?'Upper · '+carouselCategory.upper:'Lower · '+carouselCategory.lower,onclick(){selectCarouselRing(r)},'aria-pressed':String(carouselActiveRing===r),disabled:!browseEntries(r).length})));
  const foot=h('footer',{className:'curios-carousel-footer'},
   h('button',{textContent:'←',title:'Previous app',onclick(){carouselSelection=nextRingSelection(-1);drawCarousel()}}),
   h('span',{textContent:selected?apps[selected].name:'No results'}),
@@ -349,7 +363,7 @@ function drawCarousel(){
  shell.append(head,search,tabs,ringControls,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
 }
 function nextRingSelection(delta){
- const ids=carouselIds(),entries=ringEntries(carouselActiveRing);if(!entries.length)return carouselSelection;
+ const ids=carouselIds(),entries=browseEntries(carouselActiveRing);if(!entries.length)return carouselSelection;
  const index=Math.max(0,entries.indexOf(ids[carouselSelection]));
  return ids.indexOf(entries[(index+delta+entries.length)%entries.length]);
 }
