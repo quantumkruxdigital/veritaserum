@@ -11,6 +11,7 @@ import {photoAlbum} from '../apps/photo-album.js';
 import {reelMagick} from '../apps/reel-magick.js';
 import {ppl} from '../apps/ppl.js';
 import {rift} from '../apps/rift.js';
+import {retroBox} from '../apps/retro-box.js';
 import {showWelcome} from '../apps/welcome.js';
 import {beep} from '../kernel/audio.js';
 import {dev} from '../kernel/device.js';
@@ -54,6 +55,7 @@ function applyDockPlacement(){
 
 
 const apps={
+ retrobox:{name:'Retro-Box',open:retroBox,icon:'assets/apps/retrobox.svg'},
  rift:{name:'RIFT',open:rift,icon:'assets/apps/rift.svg'},
  files:{name:'Files',open:files,icon:'assets/apps/files.png'},
  media:{name:'Media',open:media,icon:'assets/apps/media.png'},
@@ -223,24 +225,32 @@ function appEntry(id){
 
 // Spatial app launcher: a keyboard-accessible, gently orbiting carousel.
 const carouselGroups={
- 'All Apps':Object.keys(apps).filter(id=>id!=='welcome'),
- 'Create':['images','scribe','alchemy','reelmagick','photos'],
- 'Explore':['files','media','videoimport','ppl','rift'],
- 'System':['vault','sys']
+ upper:{Explore:['rift','retrobox','media','ppl'],Create:['images','reelmagick','photos','videoimport'],Educate:['welcome']},
+ lower:{Office:['scribe','files'],System:['sys','vault'],Utilities:['alchemy']}
 };
-let carouselOpen=false,carouselGroup='All Apps',carouselSelection=0,carouselQuery='';
+const carouselCategory={upper:'Explore',lower:'Office'};
+let carouselOpen=false,carouselSelection=0,carouselQuery='';
 // A single rotation state survives category changes and carousel redraws.
 let carouselCloseTimer=0,carouselAngle=0,carouselVelocity=0,carouselDragging=false,carouselPointer=null,carouselLastX=0,carouselLastTime=0,carouselFrame=0,carouselFrameTime=0;
+let carouselUpperVelocity=0;
+let carouselUpperAngle=0,carouselActiveRing='lower'; // Lower ring is the default browsing focus.
 function animateCarousel(time){
  const dt=Math.min(48,time-(carouselFrameTime||time));carouselFrameTime=time;
  if(carouselOpen){
-  if(!carouselDragging){
+  if(!carouselDragging||carouselActiveRing!=='lower'){
    carouselAngle+=(carouselVelocity||0)*dt;
    carouselVelocity*=Math.pow(.94,dt/16);
    if(Math.abs(carouselVelocity)<.003){carouselVelocity=0;carouselAngle+=360*dt/68000}
   }
-  const orbit=carouselRoot.querySelector('.curios-carousel-orbit');
-  if(orbit)orbit.style.transform=`rotateX(-7deg) rotateY(${carouselAngle}deg)`;
+  const lower=carouselRoot.querySelector('.curios-carousel-orbit.lower');
+  const upper=carouselRoot.querySelector('.curios-carousel-orbit.upper');
+  if(lower)lower.style.transform=`rotateX(-7deg) rotateY(${carouselAngle}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
+  if(!carouselDragging||carouselActiveRing!=='upper'){
+   carouselUpperAngle+=carouselActiveRing==='upper'?carouselUpperVelocity*dt:0;
+   if(carouselActiveRing==='upper'){carouselUpperVelocity*=Math.pow(.94,dt/16);if(Math.abs(carouselUpperVelocity)<.003)carouselUpperVelocity=0;}
+   if(!carouselUpperVelocity)carouselUpperAngle-=360*dt/82000;
+  }
+  if(upper)upper.style.transform=`rotateX(-7deg) rotateY(${carouselUpperAngle}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
   carouselFrame=requestAnimationFrame(animateCarousel);
  }
 }
@@ -248,13 +258,16 @@ function bindCarouselDrag(stage){
  stage.addEventListener('pointerdown',e=>{
   // App cards remain clickable; empty gaps act as a grab handle.
   if(e.button!==0||e.target.closest('.curios-carousel-item'))return;
-  carouselDragging=true;carouselPointer=e.pointerId;carouselLastX=e.clientX;carouselLastTime=performance.now();carouselVelocity=0;
+  const ring=e.target.closest('.curios-carousel-orbit');
+  if(ring)selectCarouselRing(ring.classList.contains('upper')?'upper':'lower',false);
+  carouselDragging=true;carouselPointer=e.pointerId;carouselLastX=e.clientX;carouselLastTime=performance.now();if(carouselActiveRing==='upper')carouselUpperVelocity=0;else carouselVelocity=0;
   stage.setPointerCapture(e.pointerId);stage.classList.add('grabbing');e.preventDefault();
  });
  stage.addEventListener('pointermove',e=>{
   if(!carouselDragging||e.pointerId!==carouselPointer)return;
   const now=performance.now(),dx=e.clientX-carouselLastX,dt=Math.max(8,now-carouselLastTime);
-  carouselAngle+=dx*.38;carouselVelocity=Math.max(-.65,Math.min(.65,dx*.38/dt));
+  if(carouselActiveRing==='upper'){carouselUpperAngle+=dx*.38;carouselUpperVelocity=Math.max(-.65,Math.min(.65,dx*.38/dt))}
+  else{carouselAngle+=dx*.38;carouselVelocity=Math.max(-.65,Math.min(.65,dx*.38/dt))}
   carouselLastX=e.clientX;carouselLastTime=now;e.preventDefault();
  });
  const release=e=>{
@@ -268,12 +281,20 @@ function bindCarouselDrag(stage){
 const carouselRoot=h('div',{className:'curios-carousel-overlay',role:'dialog','aria-label':'CuriOS application launcher','aria-modal':'true'});
 carouselRoot.hidden=true;
 $('#fit').append(carouselRoot);
-const carouselIds=()=>carouselGroups[carouselGroup].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
+const ringEntries=(ring)=>carouselGroups[ring][carouselCategory[ring]].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
+const carouselIds=()=>[...ringEntries('upper'),...ringEntries('lower')];
 function closeCarousel(){
  if(!carouselOpen)return;
  carouselOpen=false;carouselDragging=false;carouselPointer=null;cancelAnimationFrame(carouselFrame);carouselFrameTime=0;carouselRoot.classList.remove('active');document.dispatchEvent(new CustomEvent('curios:carousel-close'));clearTimeout(carouselCloseTimer);carouselCloseTimer=setTimeout(()=>{if(!carouselOpen)carouselRoot.hidden=true},500);
 }
 function launchCarouselApp(id){closeCarousel();apps[id]?.open()}
+function selectCarouselRing(ring,redraw=true){
+ const ids=carouselIds(),entries=ringEntries(ring);if(!entries.length)return;
+ carouselActiveRing=ring;
+ if(!entries.includes(ids[carouselSelection]))carouselSelection=ids.indexOf(entries[0]);
+ if(redraw)drawCarousel();
+ else{const stage=carouselRoot.querySelector('.curios-carousel-stage');stage?.classList.toggle('focus-upper',ring==='upper');stage?.classList.toggle('focus-lower',ring==='lower');}
+}
 function drawCarousel(){
  const ids=carouselIds();if(carouselSelection>=ids.length)carouselSelection=0;
  const backdrop=h('div',{className:'curios-carousel-backdrop',onclick:closeCarousel});
@@ -282,39 +303,58 @@ function drawCarousel(){
   h('div',{},h('span',{className:'curios-carousel-kicker',textContent:'CuriOS / APPLICATIONS'})),
   h('button',{className:'curios-carousel-close',textContent:'×',title:'Close launcher',onclick:closeCarousel}));
  const search=h('input',{className:'curios-carousel-search',type:'search',placeholder:'Find an application…',value:carouselQuery,'aria-label':'Search applications',oninput(){carouselQuery=search.value;carouselSelection=0;drawCarousel();const el=carouselRoot.querySelector('.curios-carousel-search');el?.focus();el?.setSelectionRange(carouselQuery.length,carouselQuery.length)}});
- const tabs=h('nav',{className:'curios-carousel-tabs','aria-label':'Application groups'},...Object.keys(carouselGroups).map(group=>h('button',{className:group===carouselGroup?'selected':'',textContent:group,onclick(){carouselGroup=group;carouselSelection=0;drawCarousel()}})));
- const stage=h('div',{className:'curios-carousel-stage'});
- const orbit=h('div',{className:'curios-carousel-orbit'});bindCarouselDrag(stage);
+ const tabs=h('div',{className:'curios-carousel-category-groups'},...['upper','lower'].map(r=>h('nav',{className:'curios-carousel-tabs','aria-label':(r==='upper'?'Upper':'Lower')+' ring categories'},h('span',{className:'curios-carousel-category-label',textContent:r==='upper'?'UPPER':'LOWER'}),...Object.keys(carouselGroups[r]).map(group=>h('button',{className:carouselCategory[r]===group?'selected':'',textContent:group,onclick(){carouselCategory[r]=group;carouselActiveRing=r;carouselSelection=0;drawCarousel()}})))));
+ const stage=h('div',{className:'curios-carousel-stage '+(carouselActiveRing==='upper'?'focus-upper':'focus-lower')});
+ const upper=h('div',{className:'curios-carousel-orbit upper','aria-label':'Upper app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('upper')}});
+ const lower=h('div',{className:'curios-carousel-orbit lower','aria-label':'Lower app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('lower')}});
+ bindCarouselDrag(stage);
  if(ids.length){
-  const radius=ids.length<=3?160:Math.min(290,190+ids.length*9);
-  ids.forEach((id,index)=>{
-   const a=apps[id],angle=360*index/ids.length;
-   const item=h('button',{className:'curios-carousel-item'+(index===carouselSelection?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px;--counter:${-angle}deg`,title:a.name,'aria-label':'Open '+a.name,onclick(){launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();if(id==='sys')return;toggleDockPin(id);drawCarousel()}});
-   if(a.icon)item.append(h('img',{src:a.icon,alt:''}));else item.append(h('span',{textContent:a.name.slice(0,1)}));
-   item.append(h('span',{className:'curios-carousel-item-label',textContent:a.name}));orbit.append(item);
-  });
+  // Keep the primary/bottom ring populated even when a category has only one app.
+  const upperIds=ringEntries('upper');
+  const lowerIds=ringEntries('lower');
+  const populate=(ring,entries,primary)=>{
+   const radius=entries.length<=3?145:Math.min(275,165+entries.length*16);
+   entries.forEach((id,index)=>{
+    const a=apps[id],angle=360*index/entries.length;
+    const item=h('button',{className:'curios-carousel-item'+(id===ids[carouselSelection]?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px`,title:a.name,'aria-label':'Open '+a.name,onclick(){carouselActiveRing=primary?'lower':'upper';launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();if(id==='sys')return;toggleDockPin(id);drawCarousel()}});
+    if(a.icon)item.append(h('img',{src:a.icon,alt:''}));else item.append(h('span',{textContent:a.name.slice(0,1)}));
+    item.append(h('span',{className:'curios-carousel-item-label',textContent:a.name}));ring.append(item);
+   });
+  };
+  populate(upper,upperIds,false);populate(lower,lowerIds,true);
+  // The lower ring is the browsing focus. Upper apps remain directly clickable.
+  const activeEntries=carouselActiveRing==='upper'&&upperIds.length?upperIds:lowerIds;
+  if(!activeEntries.includes(ids[carouselSelection]))carouselSelection=ids.indexOf(activeEntries[0]);
  }else stage.append(h('p',{className:'curios-carousel-empty',textContent:'No matching applications'}));
- stage.append(orbit);
+ stage.append(upper,lower);
  const selected=ids[carouselSelection];
+ const ringControls=h('div',{className:'curios-carousel-ring-switch','aria-label':'Choose active carousel ring'},
+  ...['upper','lower'].map(r=>h('button',{className:carouselActiveRing===r?'active':'',textContent:r==='upper'?'Upper · '+carouselCategory.upper:'Lower · '+carouselCategory.lower,onclick(){selectCarouselRing(r)},'aria-pressed':String(carouselActiveRing===r),disabled:!ringEntries(r).length})));
  const foot=h('footer',{className:'curios-carousel-footer'},
-  h('button',{textContent:'←',title:'Previous app',onclick(){carouselSelection=(carouselSelection-1+ids.length)%ids.length;drawCarousel()}}),
+  h('button',{textContent:'←',title:'Previous app',onclick(){carouselSelection=nextRingSelection(-1);drawCarousel()}}),
   h('span',{textContent:selected?apps[selected].name:'No results'}),
-  h('button',{textContent:'→',title:'Next app',onclick(){carouselSelection=(carouselSelection+1)%ids.length;drawCarousel()}}),
+  h('button',{textContent:'→',title:'Next app',onclick(){carouselSelection=nextRingSelection(1);drawCarousel()}}),
   h('small',{textContent:'Drag or flick between apps to spin · Click to open · Right-click to pin'}));
- shell.append(head,search,tabs,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
+ shell.append(head,search,tabs,ringControls,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
+}
+function nextRingSelection(delta){
+ const ids=carouselIds(),entries=ringEntries(carouselActiveRing);if(!entries.length)return carouselSelection;
+ const index=Math.max(0,entries.indexOf(ids[carouselSelection]));
+ return ids.indexOf(entries[(index+delta+entries.length)%entries.length]);
 }
 function toggleCarousel(){
  if(carouselOpen){closeCarousel();return}
  if(document.querySelector('#lock'))return;
- closePop();carouselOpen=true;carouselQuery='';carouselGroup='All Apps';carouselSelection=0;
+ closePop();carouselOpen=true;carouselQuery='';carouselSelection=0;carouselActiveRing='lower';carouselUpperVelocity=0;
  clearTimeout(carouselCloseTimer);carouselRoot.hidden=false;document.dispatchEvent(new CustomEvent('curios:carousel-open'));drawCarousel();carouselFrameTime=0;carouselFrame=requestAnimationFrame(animateCarousel);requestAnimationFrame(()=>carouselRoot.classList.add('active'));
 }
 document.addEventListener('keydown',e=>{
  if(!carouselOpen)return;
  if(e.key==='Escape'){e.preventDefault();closeCarousel()}
+ else if(e.target.tagName!=='INPUT'&&(e.key==='ArrowUp'||e.key==='ArrowDown')){e.preventDefault();selectCarouselRing(e.key==='ArrowUp'?'upper':'lower')}
  else if(e.target.tagName!=='INPUT'&&(e.key==='ArrowRight'||e.key==='ArrowLeft')){
   e.preventDefault();const n=carouselIds().length;if(!n)return;
-  carouselSelection=(carouselSelection+(e.key==='ArrowRight'?1:-1)+n)%n;drawCarousel();
+  carouselSelection=nextRingSelection(e.key==='ArrowRight'?1:-1);drawCarousel();
  }else if(e.target.tagName!=='INPUT'&&e.key==='Enter'){
   const id=carouselIds()[carouselSelection];if(id)launchCarouselApp(id);
  }

@@ -4,7 +4,7 @@ import {h} from '../kernel/util.js';
 const KEY='curios.quickLaunch.v1';
 let launchApp=()=>{}, openPath=()=>{};
 const providers=new Map();
-const appNames={rift:'RIFT',welcome:'Welcome to CuriOS',files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick',ppl:'CuriOS-Ppl'};
+const appNames={retrobox:'Retro-Box',rift:'RIFT',welcome:'Welcome to CuriOS',files:'Files',media:'Media',images:'Images',videoimport:'Video Importer',scribe:'Scribe',alchemy:'Alchemy',sys:'Settings',vault:'Vault',photos:'Photo Album',reelmagick:'Reel-Magick',ppl:'CuriOS-Ppl'};
 const appAliases={menu:null,term:null,vol:null,files:'files',vault:'vault'};
 
 function load(){try{const saved=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(saved)?saved.filter(x=>!(x.type==='app'&&x.target==='sam')):[]}catch{return[]}}
