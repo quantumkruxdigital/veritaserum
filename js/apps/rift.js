@@ -16,8 +16,8 @@ const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 // Modular, data-driven character parts. Profiles are stored per browser for now.
 const PROFILE_KEY='curios.rift.fighter.v1';
 const ACCOUNT_KEY='rift.profile.v2';
-const PARTS={head:['Round','Angular','Visor'],body:['Standard','Armored','Slim'],arms:['Standard','Heavy','Sleek'],legs:['Standard','Boots','Runner'],crest:['None','Mohawk','Antenna','Horns']};
-const DEFAULT_FIGHTER={name:'RIFT PILOT',head:'Visor',body:'Armored',arms:'Standard',legs:'Boots',crest:'None',primary:'#56e9dc',secondary:'#172433',accent:'#f8ffff'};
+const PARTS={head:['Round','Angular','Visor'],body:['Robot Mk I','Standard','Armored','Slim'],arms:['Robot Mk I','Standard','Heavy','Sleek'],legs:['Robot Mk I','Standard','Boots','Runner'],crest:['None','Mohawk','Antenna','Horns']};
+const DEFAULT_FIGHTER={name:'RIFT PILOT',head:'Visor',body:'Robot Mk I',arms:'Robot Mk I',legs:'Robot Mk I',crest:'None',primary:'#56e9dc',secondary:'#172433',accent:'#f8ffff'};
 // Catalog metadata is the foundation for future server-awarded unlocks. No combat advantages.
 const UNLOCKS={head:{Angular:2},body:{Slim:3},arms:{Heavy:4},legs:{Runner:5},crest:{Mohawk:2,Antenna:3,Horns:6}};
 const xpForLevel=l=>100*(l-1)*l/2;
@@ -29,7 +29,84 @@ const unlocked=(part,value,level)=>level>=(UNLOCKS[part]?.[value]||1);
 function applyUnlocks(f,level){const v=sanitizeFighter(f);for(const k of Object.keys(PARTS))if(!unlocked(k,v[k],level))v[k]=DEFAULT_FIGHTER[k];return v}
 function localRecord(uid){try{const raw=localStorage.getItem(uid?'curios.rift.account.'+uid:PROFILE_KEY);if(raw){const v=JSON.parse(raw);return uid?sanitizeRecord(v):{...freshRecord(),fighter:sanitizeFighter(v)}}}catch{}return freshRecord()}
 function saveLocal(uid,record){try{localStorage.setItem(uid?'curios.rift.account.'+uid:PROFILE_KEY,JSON.stringify(uid?record:record.fighter))}catch{}}
+// The supplied starter artwork contains a torso shell (3396), a side-view arm
+// (3381), and a side-view leg (3382). The full assembled concept (3398) is
+// retained as a reference; it is not an animation strip or a separate head.
+const ROBOT_ASSETS={body:'/assets/rift/robot-mk1/torso.png',arms:'/assets/rift/robot-mk1/arm.png',legs:'/assets/rift/robot-mk1/leg.png'};
+const robotImages={};
+for(const [key,url] of Object.entries(ROBOT_ASSETS)){
+ const img=new Image();img.src=url;robotImages[key]=img;
+}
+// Hierarchical 2D skeletal rig. Joint coordinates are in game pixels relative
+// to the fighter's feet; each child inherits the transform of its parent.
+// The supplied single-piece arm/leg illustrations are split at approximate
+// elbow/knee positions. Replacement upper/lower PNGs can be mapped later.
+const RIG={
+ pelvis:{x:0,y:-49},spine:{x:0,y:-94},
+ shoulderBack:{x:-29,y:-94},shoulderFront:{x:29,y:-94},
+ hipBack:{x:-13,y:-47},hipFront:{x:13,y:-47},
+ arm:{width:37,height:93,split:.49},leg:{width:39,height:92,split:.51}
+};
+const ease=(a,b,t)=>a+(b-a)*Math.min(1,Math.max(0,t));
+function segment(ctx,img,side,from,to,width,length){
+ if(!img?.complete||!img.naturalWidth)return;
+ const sy=Math.round(img.naturalHeight*from),sh=Math.max(1,Math.round(img.naturalHeight*(to-from)));
+ ctx.drawImage(img,0,sy,img.naturalWidth,Math.min(sh,img.naturalHeight-sy),-width/2,0,width,length);
+}
+function articulatedLimb(ctx,key,origin,upperAngle,lowerAngle,front=false){
+ const img=robotImages[key],spec=RIG[key==='arms'?'arm':'leg'];
+ if(!img?.complete||!img.naturalWidth)return;
+ const upperLength=spec.height*spec.split,lowerLength=spec.height-upperLength;
+ ctx.save();ctx.translate(origin.x,origin.y);ctx.rotate(upperAngle);
+ // Upper limb from shoulder/hip to elbow/knee.
+ segment(ctx,img,key,0,spec.split,spec.width,upperLength);
+ ctx.translate(0,upperLength);ctx.rotate(lowerAngle);
+ // Lower limb is attached to the moving elbow/knee, not the torso.
+ segment(ctx,img,key,spec.split,1,spec.width,lowerLength);
+ ctx.restore();
+}
+function rigPose(f){
+ const run=f.state==='run',phase=(f.frame||0)*.27;
+ const gait=run?Math.sin(phase):0;
+ const idle=!run&&!f.move&&!f.guard&&f.grounded!==false?Math.sin((f.frame||0)*.065):0;
+ const airborne=f.grounded===false;
+ const attack=f.move?.type;
+ const progress=f.move?Math.min(1,f.move.tick/(MOVES[attack].startup+MOVES[attack].active+MOVES[attack].recovery)):0;
+ const strike=attack?Math.sin(Math.PI*Math.min(1,progress*1.8)):0;
+ return {
+  bob:run?Math.abs(gait)*2.4:idle*.8,
+  lean:run?gait*.035:attack?-.055:0,
+  backArm:-.15+gait*.33,
+  frontArm:f.guard?-1.8:attack?ease(-.35,-1.55,strike):-.12-gait*.33,
+  backElbow:f.guard?-.45:run?.18:0,
+  frontElbow:f.guard?-.95:attack?-.42*strike:run?-.2:0,
+  backHip:airborne?-.36:-gait*.4,
+  frontHip:airborne?.42:gait*.4,
+  backKnee:airborne?.72:Math.max(0,gait)*.5,
+  frontKnee:airborne?.75:Math.max(0,-gait)*.5
+ };
+}
+function drawRobot(ctx,f,profile){
+ const body=profile.body==='Robot Mk I',arms=profile.arms==='Robot Mk I',legs=profile.legs==='Robot Mk I';
+ if(!body||!arms||!legs||!robotImages.body?.complete||!robotImages.body.naturalWidth)return false;
+ const pose=rigPose(f);
+ ctx.save();ctx.translate(f.x,f.y);ctx.scale(f.face||1,1);ctx.translate(0,-pose.bob);
+ ctx.rotate(pose.lean);
+ // Rear appendages are behind the torso; front appendages in front.
+ ctx.save();ctx.globalAlpha=.84;
+ articulatedLimb(ctx,'legs',RIG.hipBack,pose.backHip,pose.backKnee);
+ articulatedLimb(ctx,'arms',RIG.shoulderBack,pose.backArm,pose.backElbow);
+ ctx.restore();
+ const torso=robotImages.body;
+ ctx.drawImage(torso,-46,-151,92,118);
+ articulatedLimb(ctx,'legs',RIG.hipFront,pose.frontHip,pose.frontKnee);
+ articulatedLimb(ctx,'arms',RIG.shoulderFront,pose.frontArm,pose.frontElbow);
+ if(f.guard){ctx.strokeStyle=profile.primary;ctx.lineWidth=4;ctx.beginPath();ctx.arc(34,-91,50,-1.1,1.1);ctx.stroke()}
+ if(f.move){const m=MOVES[f.move.type];if(f.move.tick>=m.startup&&f.move.tick<m.startup+m.active){ctx.strokeStyle=profile.primary;ctx.globalAlpha=.55;ctx.lineWidth=13;ctx.beginPath();ctx.arc(30,-90,m.range-40,-.9,.45);ctx.stroke()}}
+ ctx.restore();return true;
+}
 function drawFighter(ctx,f,profile){
+ if(profile.body==='Robot Mk I'&&profile.arms==='Robot Mk I'&&profile.legs==='Robot Mk I'&&drawRobot(ctx,f,profile))return;
  ctx.save();ctx.translate(f.x,f.y);ctx.scale(f.face,1);
  const bounce=f.state==='run'?Math.sin(f.frame*.27)*3:0;ctx.translate(0,bounce);
  const a=profile.primary,b=profile.secondary,c=profile.accent;

@@ -15,6 +15,7 @@ import {becomeRoot, isRoot, obliterateSystem} from '../kernel/root.js';
 import {api} from '../kernel/runner.js';
 import {set, sv} from '../kernel/state.js';
 import {sbSave} from '../kernel/supabase.js';
+import {logoutSession} from '../shell/session.js';
 import {RUNNER, DEV, V} from '../kernel/vfs.js';
 import {tick} from '../shell/dock.js';
 import {S, show, wins} from '../shell/wm.js';
@@ -74,4 +75,4 @@ for(const n of['npm','npx','node'])cmd(n,n+' ...  runs on your server (Ctrl+C st
   for(;;){const{done,value}=await rd.read();if(done)break;txt+=dec.decode(value,{stream:true});el.textContent=txt.replace(/\u0001exit:\S*$/,'');el.scrollIntoView({block:'end'})}
   const m=txt.match(/\u0001exit:(\S+)$/);if(m&&m[1]!='0')io.say('exit code '+m[1],'e')}
  catch(e){if(e.name=='AbortError')el.textContent=txt+'\n^C';else throw e}finally{io.ac=null}});
-cmd('logout','sign out of your server and return to this browser\'s files',()=>{localStorage.removeItem('curios.token');sbSave(null);setTimeout(()=>location.reload(),300)});
+cmd('logout','sign out of CuriOS and return to the sign-in screen',()=>logoutSession());

@@ -187,7 +187,14 @@ const pop=$('#pop'),closePop=()=>pop.style.display='none';
 function popAt(btn,...c){
  const r=btn.getBoundingClientRect(),f=$('#fit').getBoundingClientRect();
  pop.replaceChildren(...c);pop.style.display='block';
- pop.style.left=Math.max(4,Math.min(1090,(r.left-f.left)/S-60))+'px';
+ const vertical=localStorage.getItem('curios.dock.placement.v1')==='right' || document.documentElement.dataset.dockPlacement==='right';
+ if(vertical){
+  pop.style.left=Math.max(4,Math.min(1090,(r.left-f.left)/S-200))+'px';
+  pop.style.top=Math.max(4,Math.min(700,(r.top-f.top)/S-30))+'px';
+ }else{
+  pop.style.left=Math.max(4,Math.min(1090,(r.left-f.left)/S-60))+'px';
+  pop.style.top='84px';
+ }
 }
 function popAtPoint(x,y,...c){
  const f=$('#fit').getBoundingClientRect();
