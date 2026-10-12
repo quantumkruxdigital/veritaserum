@@ -227,7 +227,7 @@ function appEntry(id){
 
 // Spatial app launcher: a keyboard-accessible, gently orbiting carousel.
 const carouselGroups={
- upper:{Explore:['voyager','rift','retrobox','media','ppl'],Create:['images','reelmagick','photos','videoimport'],Educate:['welcome']},
+ upper:{Explore:['voyager','ppl','welcome'],Relax:['rift','retrobox','media'],Create:['images','reelmagick','photos','videoimport']},
  lower:{Office:['scribe','files'],System:['sys','vault'],Utilities:['alchemy']}
 };
 const carouselCategory={upper:'Explore',lower:'Office'};
@@ -274,7 +274,7 @@ function animateCarousel(time){
     // Front = positive cosine; the elevated camera sees an elliptical footprint.
     const depth=Math.cos(theta);
     const x=Math.sin(theta)*radius*focus;
-    const y=depth*radius*.46*focus;
+    const y=depth*radius*.115*focus; // 75% shallower ellipse: camera closer to ring plane
     const scale=(.78+.27*(depth+1)/2)*focus;
     item.style.transform=`translate(-50%,-50%) translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) scale(${scale.toFixed(3)})`;
     item.style.zIndex=String(Math.round(100+90*depth));
@@ -287,9 +287,9 @@ function animateCarousel(time){
 function bindCarouselDrag(stage){
  stage.addEventListener('pointerdown',e=>{
   // App cards remain clickable; empty gaps act as a grab handle.
-  if(e.button!==0||e.target.closest('.curios-carousel-item'))return;
+  if(e.button!==0||e.target.closest('.curios-carousel-item')||e.target.closest('.curios-ring-menu'))return;
   const ring=e.target.closest('.curios-carousel-orbit');
-  if(ring)selectCarouselRing((ring.classList.contains('upper')||ring.classList.contains('upper-sub'))?'upper':'lower',false);
+  selectCarouselRing(ringFromPointer(e,stage),false);
   carouselDragging=true;carouselPointer=e.pointerId;carouselLastX=e.clientX;carouselLastTime=performance.now();if(carouselActiveRing==='upper')carouselUpperVelocity=0;else carouselVelocity=0;
   stage.setPointerCapture(e.pointerId);stage.classList.add('grabbing');e.preventDefault();
  });
@@ -341,6 +341,31 @@ function selectCarouselRing(ring,redraw=true){
  if(redraw)drawCarousel();
  else{const stage=carouselRoot.querySelector('.curios-carousel-stage');stage?.classList.toggle('focus-upper',ring==='upper');stage?.classList.toggle('focus-lower',ring==='lower');}
 }
+function ringFromPointer(e,stage){
+ const ring=e.target.closest('.curios-carousel-orbit');
+ if(ring)return ring.classList.contains('upper')||ring.classList.contains('upper-sub')?'upper':'lower';
+ const bounds=stage.getBoundingClientRect();return e.clientY<bounds.top+bounds.height*.51?'upper':'lower';
+}
+function showRingCategories(e,stage,explicitRing){
+ const ring=explicitRing||ringFromPointer(e,stage);
+ selectCarouselRing(ring,false);
+ stage.querySelector('.curios-ring-menu')?.remove();
+ const menu=h('div',{className:'curios-ring-menu',role:'menu','aria-label':ring+' ring categories'});
+ for(const [category,entries] of Object.entries(carouselGroups[ring])){
+  const button=h('button',{type:'button',role:'menuitem',textContent:category+' ('+entries.filter(id=>apps[id]).length+')',onclick:()=>{
+   carouselCategory[ring]=category;
+   expandedCarouselCategory[ring]=categoryCount(ring,category)>=5?(expandedCarouselCategory[ring]===category?null:category):null;
+   carouselSelection=0;drawCarousel();
+  }});
+  menu.append(button);
+ }
+ const b=stage.getBoundingClientRect();
+ menu.style.left=Math.max(8,Math.min(e.clientX-b.left,b.width-320))+'px';
+ menu.style.top=Math.max(4,Math.min(e.clientY-b.top,b.height-46))+'px';
+ stage.append(menu);
+ const dismiss=event=>{if(menu.contains(event.target))return;menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
+ setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
+}
 function drawCarousel(){
  const ids=carouselIds();if(carouselSelection>=ids.length)carouselSelection=0;
  const backdrop=h('div',{className:'curios-carousel-backdrop',onclick:closeCarousel});
@@ -351,10 +376,11 @@ function drawCarousel(){
  const search=h('input',{className:'curios-carousel-search',type:'search',placeholder:'Find an application…',value:carouselQuery,'aria-label':'Search applications',oninput(){carouselQuery=search.value;carouselSelection=0;drawCarousel();const el=carouselRoot.querySelector('.curios-carousel-search');el?.focus();el?.setSelectionRange(carouselQuery.length,carouselQuery.length)}});
  const tabs=h('div',{className:'curios-carousel-category-groups'},...['upper','lower'].map(r=>h('nav',{className:'curios-carousel-tabs','aria-label':(r==='upper'?'Upper':'Lower')+' ring categories'},h('span',{className:'curios-carousel-category-label',textContent:r==='upper'?'UPPER':'LOWER'}),...Object.keys(carouselGroups[r]).map(group=>h('button',{className:carouselCategory[r]===group?'selected':'',textContent:group+(categoryCount(r,group)>=5?' · '+categoryCount(r,group):''),title:categoryCount(r,group)>=5?'Open or close '+group+' sub-ring':'Included on primary ring',onclick(){carouselCategory[r]=group;expandedCarouselCategory[r]=categoryCount(r,group)>=5?(expandedCarouselCategory[r]===group?null:group):null;carouselActiveRing=r;carouselSelection=0;drawCarousel()}})))));
  const stage=h('div',{className:'curios-carousel-stage '+(carouselActiveRing==='upper'?'focus-upper':'focus-lower')});
- const upper=h('div',{className:'curios-carousel-orbit upper','aria-label':'Upper app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('upper')}});
+ stage.addEventListener('contextmenu',e=>{if(e.target.closest('.curios-carousel-item'))return;e.preventDefault();showRingCategories(e,stage);});
+ const upper=h('div',{className:'curios-carousel-orbit upper','aria-label':'Upper app ring'});
  const upperSub=h('div',{className:'curios-carousel-orbit upper-sub','aria-label':'Expanded upper category orbit'});
  const lowerSub=h('div',{className:'curios-carousel-orbit lower-sub','aria-label':'Expanded lower category orbit'});
- const lower=h('div',{className:'curios-carousel-orbit lower','aria-label':'Lower app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('lower')}});
+ const lower=h('div',{className:'curios-carousel-orbit lower','aria-label':'Lower app ring'});
  bindCarouselDrag(stage);
  if(ids.length){
   // Keep the primary/bottom ring populated even when a category has only one app.
@@ -364,7 +390,7 @@ function drawCarousel(){
    const radius=entries.length<=3?165:Math.min(265,175+entries.length*12);
    entries.forEach((id,index)=>{
     const a=apps[id],angle=360*index/entries.length;
-    const item=h('button',{className:'curios-carousel-item'+(id===ids[carouselSelection]?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px`,title:a.name,'aria-label':'Open '+a.name,onclick(){carouselActiveRing=primary?'lower':'upper';launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();if(id==='sys')return;toggleDockPin(id);drawCarousel()}});
+    const item=h('button',{className:'curios-carousel-item'+(id===ids[carouselSelection]?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px`,title:a.name,'aria-label':'Open '+a.name,onclick(){const target=primary?'lower':'upper';if(carouselActiveRing!==target){selectCarouselRing(target);return;}launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();showRingCategories(e,stage,primary?'lower':'upper')}});
     if(a.icon)item.append(h('img',{src:a.icon,alt:''}));else item.append(h('span',{textContent:a.name.slice(0,1)}));
     item.append(h('span',{className:'curios-carousel-item-label',textContent:a.name}));ring.append(item);
    });
@@ -383,8 +409,8 @@ function drawCarousel(){
   h('button',{textContent:'←',title:'Previous app',onclick(){carouselSelection=nextRingSelection(-1);drawCarousel()}}),
   h('span',{textContent:selected?apps[selected].name:'No results'}),
   h('button',{textContent:'→',title:'Next app',onclick(){carouselSelection=nextRingSelection(1);drawCarousel()}}),
-  h('small',{textContent:'Drag or flick between apps to spin · Click to open · Right-click to pin'}));
- shell.append(head,search,tabs,ringControls,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
+  h('small',{textContent:'Select a ring first, then tap an app to open · Right-click a ring for categories'}));
+ shell.append(head,search,stage,foot);carouselRoot.replaceChildren(backdrop,shell);
 }
 function nextRingSelection(delta){
  const ids=carouselIds(),entries=browseEntries(carouselActiveRing);if(!entries.length)return carouselSelection;

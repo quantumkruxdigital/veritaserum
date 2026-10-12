@@ -1,7 +1,7 @@
 import {stopPreferencesSync} from '../kernel/preferences-sync.js';
 // CuriOS session actions shared by the dock and future system surfaces.
 import {CFG} from '../kernel/config.js';
-import {sbSave} from '../kernel/supabase.js';
+import {SB,sbSave} from '../kernel/supabase.js';
 import {showLock,showLogin} from './login.js';
 import {vlockNow} from '../apps/vault.js';
 
@@ -36,7 +36,9 @@ export function logoutSession(){
   stopPreferencesSync();
   // Invalidate both account and legacy tokens before displaying login.
   try{localStorage.removeItem('curios.token')}catch{}
+  const token=SB?.access_token;
   sbSave(null);
+  if(token&&CFG.supabaseUrl){void fetch(CFG.supabaseUrl.replace(/\/$/,'')+'/auth/v1/logout',{method:'POST',headers:{apikey:CFG.supabaseKey,Authorization:'Bearer '+token}}).catch(()=>{});}
   try{sessionStorage.setItem('curios.loggedOutInPlace','1')}catch{}
   vlockNow();
   document.dispatchEvent(new CustomEvent('curios:session-logout'));
