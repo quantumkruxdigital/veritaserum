@@ -281,7 +281,18 @@ function bindCarouselDrag(stage){
 const carouselRoot=h('div',{className:'curios-carousel-overlay',role:'dialog','aria-label':'CuriOS application launcher','aria-modal':'true'});
 carouselRoot.hidden=true;
 $('#fit').append(carouselRoot);
-const ringEntries=(ring)=>carouselGroups[ring][carouselCategory[ring]].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
+// Categories remain on the primary orbit until they contain at least five apps.
+// Larger categories can be expanded as a dedicated orbit by selecting their tab.
+const expandedCarouselCategory={upper:null,lower:null};
+const categoryCount=(ring,category)=>carouselGroups[ring][category].filter(id=>apps[id]).length;
+const ringEntries=(ring)=>{
+ const groups=carouselGroups[ring];
+ const expanded=expandedCarouselCategory[ring];
+ const ids=expanded&&categoryCount(ring,expanded)>=5
+  ?groups[expanded]
+  :Object.entries(groups).flatMap(([category,items])=>categoryCount(ring,category)<5?items:[]);
+ return [...new Set(ids)].filter(id=>apps[id]&&apps[id].name.toLowerCase().includes(carouselQuery.toLowerCase()));
+};
 const carouselIds=()=>[...ringEntries('upper'),...ringEntries('lower')];
 function closeCarousel(){
  if(!carouselOpen)return;
@@ -303,7 +314,7 @@ function drawCarousel(){
   h('div',{},h('span',{className:'curios-carousel-kicker',textContent:'CuriOS / APPLICATIONS'})),
   h('button',{className:'curios-carousel-close',textContent:'×',title:'Close launcher',onclick:closeCarousel}));
  const search=h('input',{className:'curios-carousel-search',type:'search',placeholder:'Find an application…',value:carouselQuery,'aria-label':'Search applications',oninput(){carouselQuery=search.value;carouselSelection=0;drawCarousel();const el=carouselRoot.querySelector('.curios-carousel-search');el?.focus();el?.setSelectionRange(carouselQuery.length,carouselQuery.length)}});
- const tabs=h('div',{className:'curios-carousel-category-groups'},...['upper','lower'].map(r=>h('nav',{className:'curios-carousel-tabs','aria-label':(r==='upper'?'Upper':'Lower')+' ring categories'},h('span',{className:'curios-carousel-category-label',textContent:r==='upper'?'UPPER':'LOWER'}),...Object.keys(carouselGroups[r]).map(group=>h('button',{className:carouselCategory[r]===group?'selected':'',textContent:group,onclick(){carouselCategory[r]=group;carouselActiveRing=r;carouselSelection=0;drawCarousel()}})))));
+ const tabs=h('div',{className:'curios-carousel-category-groups'},...['upper','lower'].map(r=>h('nav',{className:'curios-carousel-tabs','aria-label':(r==='upper'?'Upper':'Lower')+' ring categories'},h('span',{className:'curios-carousel-category-label',textContent:r==='upper'?'UPPER':'LOWER'}),...Object.keys(carouselGroups[r]).map(group=>h('button',{className:carouselCategory[r]===group?'selected':'',textContent:group+(categoryCount(r,group)>=5?' · '+categoryCount(r,group):''),title:categoryCount(r,group)>=5?'Open or close '+group+' sub-ring':'Included on primary ring',onclick(){carouselCategory[r]=group;expandedCarouselCategory[r]=categoryCount(r,group)>=5?(expandedCarouselCategory[r]===group?null:group):null;carouselActiveRing=r;carouselSelection=0;drawCarousel()}})))));
  const stage=h('div',{className:'curios-carousel-stage '+(carouselActiveRing==='upper'?'focus-upper':'focus-lower')});
  const upper=h('div',{className:'curios-carousel-orbit upper','aria-label':'Upper app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('upper')}});
  const lower=h('div',{className:'curios-carousel-orbit lower','aria-label':'Lower app ring',onclick:e=>{if(!e.target.closest('.curios-carousel-item'))selectCarouselRing('lower')}});

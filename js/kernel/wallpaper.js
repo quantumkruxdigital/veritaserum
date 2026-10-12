@@ -2,6 +2,7 @@ import {set,sv} from './state.js';
 import {V} from './vfs.js';
 
 export const STOCK_WALLPAPERS=[
+ {id:'elsewhere',name:'Elsewhere',url:'assets/elsewhere.png'},
  {id:'symbiotic',name:'Symbiotic',url:'assets/symbiotic.png'},
  {id:'superposition',name:'Superposition',url:'assets/superposition.png'},
  {id:'curios-circuit',name:'CuriOS Circuit',url:'assets/curios-circuit.svg'}
