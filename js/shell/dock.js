@@ -248,15 +248,24 @@ function animateCarousel(time){
   const upper=carouselRoot.querySelector('.curios-carousel-orbit.upper');
   const lowerSub=carouselRoot.querySelector('.curios-carousel-orbit.lower-sub');
   const upperSub=carouselRoot.querySelector('.curios-carousel-orbit.upper-sub');
-  if(lower)lower.style.transform=`rotateX(-7deg) rotateY(${carouselAngle}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
+  if(lower)lower.style.transform=`rotateX(-30deg) rotateY(${carouselAngle}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
   if(!carouselDragging||carouselActiveRing!=='upper'){
    carouselUpperAngle+=carouselActiveRing==='upper'?carouselUpperVelocity*dt:0;
    if(carouselActiveRing==='upper'){carouselUpperVelocity*=Math.pow(.94,dt/16);if(Math.abs(carouselUpperVelocity)<.003)carouselUpperVelocity=0;}
    if(!carouselUpperVelocity)carouselUpperAngle-=360*dt/82000;
   }
-  if(lowerSub)lowerSub.style.transform=`rotateX(-7deg) rotateY(${-carouselAngle*.78}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
-  if(upperSub)upperSub.style.transform=`rotateX(-7deg) rotateY(${-carouselUpperAngle*.78}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
-  if(upper)upper.style.transform=`rotateX(-7deg) rotateY(${carouselUpperAngle}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
+  if(lowerSub)lowerSub.style.transform=`rotateX(-30deg) rotateY(${-carouselAngle*.78}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
+  if(upperSub)upperSub.style.transform=`rotateX(-30deg) rotateY(${-carouselUpperAngle*.78}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
+  if(upper)upper.style.transform=`rotateX(-30deg) rotateY(${carouselUpperAngle}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
+  // Depth-sort both orbital tiers, keeping near-side apps visually above far-side apps.
+  for(const orbit of [upper,lower,upperSub,lowerSub]){
+   if(!orbit)continue;
+   const phase=orbit===upper?carouselUpperAngle:orbit===lower?carouselAngle:orbit===upperSub?-carouselUpperAngle*.78:-carouselAngle*.78;
+   orbit.querySelectorAll('.curios-carousel-item').forEach(item=>{
+    const angle=parseFloat(item.style.getPropertyValue('--angle'))||0;
+    item.style.zIndex=String(Math.round(100+90*Math.cos((angle+phase)*Math.PI/180)));
+   });
+  }
   carouselFrame=requestAnimationFrame(animateCarousel);
  }
 }
@@ -337,7 +346,7 @@ function drawCarousel(){
   const upperIds=ringEntries('upper');
   const lowerIds=ringEntries('lower');
   const populate=(ring,entries,primary)=>{
-   const radius=entries.length<=3?145:Math.min(275,165+entries.length*16);
+   const radius=entries.length<=3?165:Math.min(265,175+entries.length*12);
    entries.forEach((id,index)=>{
     const a=apps[id],angle=360*index/entries.length;
     const item=h('button',{className:'curios-carousel-item'+(id===ids[carouselSelection]?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px`,title:a.name,'aria-label':'Open '+a.name,onclick(){carouselActiveRing=primary?'lower':'upper';launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();if(id==='sys')return;toggleDockPin(id);drawCarousel()}});

@@ -306,3 +306,14 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 .voyager-notice{padding:5px 12px;background:#152537;color:#aac5d5;font-size:11px}
 .voyager-frame-wrap{position:relative;flex:1;min-height:0;background:white}.voyager-frame{width:100%;height:100%;border:0;background:white}
 .voyager-panel{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:radial-gradient(circle at 50% 40%,#173e53,#07111f 70%);text-align:center;padding:30px;color:#dff8ff}.voyager-panel[hidden],.voyager-frame[hidden]{display:none}.voyager-panel h2{font-size:34px;letter-spacing:8px;margin:0}.voyager-panel p{max-width:480px;margin:0}
+
+/* Dual orbital carousel: restore the original tilted, volumetric 3D ring presentation. */
+.curios-carousel-stage{min-height:460px;perspective:1050px;perspective-origin:50% 35%;isolation:isolate}
+.curios-carousel-orbit.upper{top:27%;z-index:2}
+.curios-carousel-orbit.lower{top:73%;z-index:3}
+.curios-carousel-orbit.upper-sub{top:27%;left:60%;z-index:4}
+.curios-carousel-orbit.lower-sub{top:73%;left:60%;z-index:5}
+.curios-carousel-item{transform:rotateY(var(--angle)) translateZ(var(--radius)) translate(-50%,-50%);backface-visibility:visible}
+.curios-carousel-stage:before{height:92%;width:85%;border-color:#8dfbea0d}
+@media(max-height:760px){.curios-carousel-stage{min-height:330px}.curios-carousel-orbit.upper{top:25%}.curios-carousel-orbit.lower{top:76%}}
+@media(max-width:680px){.curios-carousel-stage{min-height:380px;perspective:900px}.curios-carousel-orbit.upper{top:27%}.curios-carousel-orbit.lower{top:74%}}
