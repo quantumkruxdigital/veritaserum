@@ -248,22 +248,37 @@ function animateCarousel(time){
   const upper=carouselRoot.querySelector('.curios-carousel-orbit.upper');
   const lowerSub=carouselRoot.querySelector('.curios-carousel-orbit.lower-sub');
   const upperSub=carouselRoot.querySelector('.curios-carousel-orbit.upper-sub');
-  if(lower)lower.style.transform=`rotateX(-30deg) rotateY(${carouselAngle}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
+  // The ring is a horizontal X/Z circle seen from slightly above, not a vertical
+  // Y-axis CSS carousel. Project each card from the circle onto an ellipse and
+  // billboard it toward the viewer. Rotating a parent with rotateY made cards
+  // appear as spokes/ceiling-fan blades instead of a visible orbital ring.
   if(!carouselDragging||carouselActiveRing!=='upper'){
    carouselUpperAngle+=carouselActiveRing==='upper'?carouselUpperVelocity*dt:0;
-   if(carouselActiveRing==='upper'){carouselUpperVelocity*=Math.pow(.94,dt/16);if(Math.abs(carouselUpperVelocity)<.003)carouselUpperVelocity=0;}
+   if(carouselActiveRing==='upper'){
+    carouselUpperVelocity*=Math.pow(.94,dt/16);
+    if(Math.abs(carouselUpperVelocity)<.003)carouselUpperVelocity=0;
+   }
    if(!carouselUpperVelocity)carouselUpperAngle-=360*dt/82000;
   }
-  if(lowerSub)lowerSub.style.transform=`rotateX(-30deg) rotateY(${-carouselAngle*.78}deg) scale3d(${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1},${carouselActiveRing==='lower'?1.2:1})`;
-  if(upperSub)upperSub.style.transform=`rotateX(-30deg) rotateY(${-carouselUpperAngle*.78}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
-  if(upper)upper.style.transform=`rotateX(-30deg) rotateY(${carouselUpperAngle}deg) scale3d(${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1},${carouselActiveRing==='upper'?1.2:1})`;
-  // Depth-sort both orbital tiers, keeping near-side apps visually above far-side apps.
-  for(const orbit of [upper,lower,upperSub,lowerSub]){
+  for(const [orbit,phase,ringName] of [
+   [upper,carouselUpperAngle,'upper'],[lower,carouselAngle,'lower'],
+   [upperSub,-carouselUpperAngle*.78,'upper'],[lowerSub,-carouselAngle*.78,'lower']
+  ]){
    if(!orbit)continue;
-   const phase=orbit===upper?carouselUpperAngle:orbit===lower?carouselAngle:orbit===upperSub?-carouselUpperAngle*.78:-carouselAngle*.78;
+   const active=carouselActiveRing===ringName;
+   const focus=active?1.2:1;
    orbit.querySelectorAll('.curios-carousel-item').forEach(item=>{
-    const angle=parseFloat(item.style.getPropertyValue('--angle'))||0;
-    item.style.zIndex=String(Math.round(100+90*Math.cos((angle+phase)*Math.PI/180)));
+    const angle=(parseFloat(item.style.getPropertyValue('--angle'))||0)+phase;
+    const radius=parseFloat(item.style.getPropertyValue('--radius'))||180;
+    const theta=angle*Math.PI/180;
+    // Front = positive cosine; the elevated camera sees an elliptical footprint.
+    const depth=Math.cos(theta);
+    const x=Math.sin(theta)*radius*focus;
+    const y=depth*radius*.46*focus;
+    const scale=(.78+.27*(depth+1)/2)*focus;
+    item.style.transform=`translate(-50%,-50%) translate3d(${x.toFixed(2)}px,${y.toFixed(2)}px,0) scale(${scale.toFixed(3)})`;
+    item.style.zIndex=String(Math.round(100+90*depth));
+    item.style.opacity=String(.68+.32*(depth+1)/2);
    });
   }
   carouselFrame=requestAnimationFrame(animateCarousel);
