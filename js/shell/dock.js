@@ -159,7 +159,7 @@ function menuButton(){
   dataset:{a:'menu',dockItem:'menu'},
   title:editMode?'Drag to rearrange':'Apps'
  });
- b.append(h('img',{src:'assets/icons/curios-particle-c.png',alt:'',className:'curios-brand-dock-icon'}));
+ b.append(h('img',{src:'assets/icons/curios-particle-c-dock.png',alt:'',className:'curios-brand-dock-icon'}));
  return b;
 }
 
