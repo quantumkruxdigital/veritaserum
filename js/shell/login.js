@@ -67,7 +67,7 @@ function digitalSpace(canvas){
 // Keep desktop controls from stealing focus while authentication is visible.
 // Do not repeatedly refocus a field: that would interfere with typing and autofill.
 function guardLoginFocus(lock,panel,preferred){
- const controls=()=>[...panel.querySelectorAll('input:not([disabled]),button:not([disabled])')].filter(el=>el.getClientRects().length);
+ const controls=()=>[...panel.querySelectorAll('input:not([disabled]),button:not([disabled]),a[href]')].filter(el=>el.getClientRects().length);
  const onFocus=e=>{
   if(!lock.isConnected||lock.classList.contains('login-success'))return;
   if(!lock.contains(e.target)){
@@ -93,7 +93,7 @@ function guardLoginFocus(lock,panel,preferred){
 }
 function successful(lock,space,panel,cb){lock.classList.add('login-success');panel.querySelectorAll('input,button,.msg').forEach(e=>e.disabled=true);space.reveal(panel,()=>{lock.classList.add('login-finish');setTimeout(cb,950)})}
 export function showLogin(msg){const e=h('input',{type:'email',placeholder:'Email',autocomplete:'username'}),p=h('input',{type:'password',placeholder:'Password',autocomplete:'current-password'}),m=h('div',{className:'msg',textContent:msg||''}),canvas=h('canvas',{className:'login-space','aria-hidden':'true'});
- let busy=false,space;const panel=h('div',{className:'vf login-panel'},h('div',{className:'login-brand'},h('img',{src:'assets/icons/curios-particle-wordmark.png',alt:'CuriOS',className:'curios-brand-wordmark'})),h('div',{className:'login-title',textContent:'Sign in to your desktop'}),e,p,h('button',{className:'btn',textContent:'Sign in'}),h('button',{className:'btn',textContent:'Create account'}),m);const lock=h('div',{id:'lock'},canvas,panel);
+ let busy=false,space;const panel=h('div',{className:'vf login-panel'},h('div',{className:'login-brand'},h('img',{src:'assets/icons/curios-particle-wordmark.png',alt:'CuriOS',className:'curios-brand-wordmark'})),h('div',{className:'login-title',textContent:'Sign in to your desktop'}),e,p,h('button',{className:'btn',textContent:'Sign in'}),h('button',{className:'btn',textContent:'Create account'}),m,h('div',{className:'curios-learn-prompt'},'What is this? ',h('a',{href:'about.html',className:'curios-learn-link',textContent:'Learn More ↗'})));const lock=h('div',{id:'lock'},canvas,panel);
  const go=async up=>{if(busy)return;m.style.color='';m.textContent='';await enterCuriOSFullscreen();if(!document.fullscreenElement){m.textContent='Fullscreen access is required to enter CuriOS. Please allow fullscreen and try again.';return}try{const j=await sbAuth(up?'signup':'token?grant_type=password',{email:e.value.trim(),password:p.value});if(!j.access_token){leaveCuriOSFullscreen();m.style.color='var(--dim)';m.textContent='Check your email to confirm the account, then sign in.';return}busy=true;sbSet(j);successful(lock,space,panel,()=>{space.stop();lock.remove();sessionStorage.removeItem('curios.loggedOutInPlace');dispatchEvent(new CustomEvent('curios:authenticated'))})}catch(x){leaveCuriOSFullscreen();m.textContent=String(x)}};panel.querySelectorAll('button')[0].onclick=()=>go(0);panel.querySelectorAll('button')[1].onclick=()=>go(1);p.onkeydown=ev=>ev.key==='Enter'&&go(0);$('#fit').append(lock);guardLoginFocus(lock,panel,e);space=digitalSpace(canvas);requestAnimationFrame(()=>{if(lock.isConnected)e.focus({preventScroll:true})})}
 
 export function showLock(onUnlock){

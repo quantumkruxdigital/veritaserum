@@ -377,3 +377,8 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 #dock button[data-a="menu"] .curios-brand-dock-icon{position:absolute;left:50%;top:50%;margin:0;transform:translate(-50%,-50%);transform-origin:center center}
 #dock button[data-a="menu"]:hover .curios-brand-dock-icon,
 #dock button[data-a="menu"]:focus-visible .curios-brand-dock-icon{transform:translate(-50%,-50%) scale(1.07)}
+
+/* Public introduction link beneath authentication controls. */
+.curios-learn-prompt{margin-top:18px;text-align:center;font-size:12px;letter-spacing:.015em;color:#b6cbd5;line-height:1.5}
+.curios-learn-link{color:#e9fcff;text-decoration:underline;text-decoration-color:#77b8c4;text-underline-offset:3px;margin-left:4px}
+.curios-learn-link:hover,.curios-learn-link:focus-visible{color:#7cf6ee;text-decoration-color:currentColor}
