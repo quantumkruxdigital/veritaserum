@@ -357,3 +357,17 @@ label.s{display:flex;justify-content:space-between;align-items:center;gap:8px;pa
 .curios-brand-wordmark{display:block;width:clamp(145px,18vw,210px);height:auto;object-fit:contain;filter:drop-shadow(0 0 6px #4b83ff40)}
 .login-brand .curios-brand-wordmark{width:205px;max-width:75%}
 .cw-header .curios-brand-wordmark{width:190px;max-width:100%}
+
+/* CuriOS v4: +30% dock app-menu mark (48.1px -> 62.53px), brighter white/blue halo.
+   Image grows without changing dock button hitbox or other dock icons. */
+#dock button[data-a="menu"]{overflow:visible}
+#dock button[data-a="menu"] .curios-brand-dock-icon{
+ width:62.53px;height:62.53px;max-width:none;max-height:none;
+ filter:drop-shadow(0 0 4px #ffffffdd) drop-shadow(0 0 10px #d7eaffc9) drop-shadow(0 0 19px #4d83ffad);
+ transition:transform .18s ease,filter .18s ease;pointer-events:none;
+}
+#dock button[data-a="menu"]:hover .curios-brand-dock-icon,
+#dock button[data-a="menu"]:focus-visible .curios-brand-dock-icon{
+ transform:scale(1.07);
+ filter:drop-shadow(0 0 6px #ffffff) drop-shadow(0 0 15px #e4f4ff) drop-shadow(0 0 28px #4e8dffeb);
+}
