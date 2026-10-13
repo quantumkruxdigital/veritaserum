@@ -366,6 +366,20 @@ function showRingCategories(e,stage,explicitRing){
  const dismiss=event=>{if(menu.contains(event.target))return;menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
  setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
 }
+function showCarouselAppMenu(e,stage,id){
+ e.preventDefault();e.stopPropagation();
+ stage.querySelector('.curios-ring-menu')?.remove();
+ const menu=h('div',{className:'curios-ring-menu curios-carousel-app-menu',role:'menu','aria-label':apps[id].name+' actions'});
+ menu.append(h('button',{type:'button',role:'menuitem',textContent:isDockPinned(id)?'Unpin from Dock':'Pin to Dock',onclick:event=>{
+  event.stopPropagation();toggleDockPin(id);menu.remove();
+ }}));
+ const bounds=stage.getBoundingClientRect();
+ menu.style.left=Math.max(8,Math.min(e.clientX-bounds.left,bounds.width-230))+'px';
+ menu.style.top=Math.max(4,Math.min(e.clientY-bounds.top,bounds.height-55))+'px';
+ stage.append(menu);
+ const dismiss=event=>{if(menu.contains(event.target))return;menu.remove();document.removeEventListener('pointerdown',dismiss,true)};
+ setTimeout(()=>document.addEventListener('pointerdown',dismiss,true),0);
+}
 function drawCarousel(){
  const ids=carouselIds();if(carouselSelection>=ids.length)carouselSelection=0;
  const backdrop=h('div',{className:'curios-carousel-backdrop',onclick:closeCarousel});
@@ -390,7 +404,7 @@ function drawCarousel(){
    const radius=entries.length<=3?165:Math.min(265,175+entries.length*12);
    entries.forEach((id,index)=>{
     const a=apps[id],angle=360*index/entries.length;
-    const item=h('button',{className:'curios-carousel-item'+(id===ids[carouselSelection]?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px`,title:a.name,'aria-label':'Open '+a.name,onclick(){const target=primary?'lower':'upper';if(carouselActiveRing!==target){selectCarouselRing(target);return;}launchCarouselApp(id)},oncontextmenu:e=>{e.preventDefault();e.stopPropagation();showRingCategories(e,stage,primary?'lower':'upper')}});
+    const item=h('button',{className:'curios-carousel-item'+(id===ids[carouselSelection]?' selected':''),style:`--angle:${angle}deg;--radius:${radius}px`,title:a.name,'aria-label':'Open '+a.name,onclick(){const target=primary?'lower':'upper';if(carouselActiveRing!==target){selectCarouselRing(target);return;}launchCarouselApp(id)},oncontextmenu:e=>showCarouselAppMenu(e,stage,id)});
     if(a.icon)item.append(h('img',{src:a.icon,alt:''}));else item.append(h('span',{textContent:a.name.slice(0,1)}));
     item.append(h('span',{className:'curios-carousel-item-label',textContent:a.name}));ring.append(item);
    });

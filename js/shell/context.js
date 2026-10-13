@@ -46,7 +46,11 @@ function quickItems(){const pins=load(),out=[sep('Quick Launch')];
 function universal(target){const out=[];const appBtn=target.closest?.('#dock button[data-a]');if(appBtn){const id=appAliases[appBtn.dataset.a];if(id){const q={type:'app',target:id,label:appNames[id]||id};out.push(item(isPinned(q)?'Unpin '+q.label+' from Quick Launch':'Pin '+q.label+' to Quick Launch',()=>isPinned(q)?unpinQuick(q):pinQuick(q)),sep('Universal'))}}
  out.push(...quickItems());out.push(sep('Universal'),item('Open Files',()=>launchApp('files')),item('Open Terminal',()=>window.dispatchEvent(new CustomEvent('curios:terminal-toggle'))));return out}
 
-document.addEventListener('contextmenu',async e=>{e.preventDefault();close();if(document.getElementById('lock'))return;const w=e.target.closest?.('.win'),id=w?.dataset?.winId;let local=[];if(id&&providers.has(id)){try{local=await providers.get(id)(e)||[]}catch{local=[]}}
+document.addEventListener('contextmenu',async e=>{
+ // The carousel owns right-click actions for its rings and app shortcuts.
+ // This capture-phase guard prevents the universal menu from covering them.
+ if(e.target.closest?.('.curios-carousel-overlay:not([hidden])')){e.preventDefault();close();return;}
+ e.preventDefault();close();if(document.getElementById('lock'))return;const w=e.target.closest?.('.win'),id=w?.dataset?.winId;let local=[];if(id&&providers.has(id)){try{local=await providers.get(id)(e)||[]}catch{local=[]}}
  const rendered=[];if(local.length){rendered.push(sep(appNames[id]||'App'));for(const a of local){if(a.separator)rendered.push(sep(a.separator));else rendered.push(item(a.label,a.action,a.danger?'danger':'',!!a.disabled,a.children))}rendered.push(sep('Universal'))}
  rendered.push(...universal(e.target));show(e.clientX,e.clientY,rendered)
 },{capture:true});
