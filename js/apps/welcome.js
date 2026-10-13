@@ -15,7 +15,7 @@ export function showWelcome({automatic=false}={}){
  if(wins.welcome){wins.welcome.e.style.display='flex';return;}
  const w=win('welcome','Welcome to CuriOS',680,610,bd=>{
   bd.classList.add('curios-welcome');
-  const header=h('div',{className:'cw-header'},h('div',{className:'cw-mark',textContent:'C'}),h('div',{},h('h2',{textContent:'Welcome to CuriOS'}),h('p',{textContent:'Your digital space. Reimagined.'})));
+  const header=h('div',{className:'cw-header'},h('div',{className:'cw-mark'},h('img',{src:'assets/icons/curios-particle-c.png',alt:'CuriOS particle C logo'})),h('div',{},h('h2',{textContent:'Welcome to CuriOS'}),h('p',{textContent:'Your digital space. Reimagined.'})));
   const intro=h('p',{className:'cw-intro',textContent:'CuriOS is a browser-based desktop environment that brings your applications, files, settings, and connected services together in a persistent workspace.'});
   const grid=h('div',{className:'cw-grid'},...items.map(([name,description])=>h('div',{className:'cw-item'},h('strong',{textContent:name}),h('p',{textContent:description}))));
   const check=h('input',{type:'checkbox',checked:localStorage.getItem(key())==='1'});
