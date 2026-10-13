@@ -60,7 +60,7 @@ const apps={
  retrobox:{name:'Retro-Box',open:retroBox,icon:'assets/apps/retrobox-custom.png'},
  rift:{name:'RIFT',open:rift,icon:'assets/apps/rift.svg'},
  files:{name:'Files',open:files,icon:'assets/apps/files.png'},
- media:{name:'Media',open:media,icon:'assets/apps/media.png'},
+ media:{name:'Vela Player',open:media,icon:'assets/apps/media.png'},
  images:{name:'Images',open:imageViewer,icon:'assets/apps/images.png'},
  videoimport:{name:'Video Importer',open:videoImporter,icon:'assets/apps/videoimport.png'},
  scribe:{name:'Scribe',open:()=>scribe('/Documents/untitled.scribe'),icon:'assets/apps/scribe.png'},
